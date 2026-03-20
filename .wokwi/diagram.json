@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "author": "Mecapitronic",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "board-ssd1306", "id": "oled1", "top": -100, "left": 0, "attrs": {"i2cAddress": "0x3D"} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "green", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "yellow", [] ],
+    [ "oled1:GND", "esp:GND.1", "black", [ "v-10", "h-50", "v250" ] ],
+    [ "oled1:VCC", "esp:3V3", "red", [ "v-20", "h-70", "v60" ] ],
+    [ "esp:21", "oled1:SDA", "green", [ "h10", "v-180", "h-70" ] ],
+    [ "esp:22", "oled1:SCL", "green", [ "h20", "v-160", "h-70" ] ]
+  ],
+  "serialMonitor": { "convertEol": false, "display": "auto", "newline": "lf" },
+  "dependencies": {}
+}
