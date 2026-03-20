@@ -86,7 +86,7 @@ namespace Screen
         display.clearDisplay();
     }
 
-    void Text(String &text,
+    void Text(const String &text,
               int size,
               int cursorX,
               int cursorY,

@@ -18,10 +18,9 @@ void setup(void)
 int32_t cpt = 0;
 void loop(void)
 {
-    String text = "Mecapi";
     for (size_t i = 1; i < 5; i++)
     {
-        Screen::Text(text, i);
+        Screen::Text("Mecapi", i);
         delay(1000);
     }
     delay(1000);
