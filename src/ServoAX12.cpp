@@ -6,7 +6,6 @@ namespace ServoAX12
 {
     namespace
     {
-        bool _simulation = false;
         int8_t _rxPin;
         int8_t _txPin;
         int8_t _dirPin;
@@ -18,7 +17,7 @@ namespace ServoAX12
 
         TaskThread taskUpdateServo;
         std::unordered_map<ServoID, ServoMotion, std::hash<ServoID>> Servos;
-    }
+    } // namespace
 
     void Initialisation(HardwareSerial &serial, int8_t rxPin, int8_t txPin,int8_t dirPin, BaudRate baudRate, DxlProtocolVersion dxlProtocolVersion)
     {
@@ -27,7 +26,6 @@ namespace ServoAX12
         _dirPin=dirPin;
         _baudRate = baudRate;
         _dxlProtocolVersion = dxlProtocolVersion;
-        //_simulation = simulation;
         serial.setPins(_rxPin, _txPin);
         dxl = Dynamixel2Arduino(serial, _dirPin);
         // Set Port baudrate. This has to match with DYNAMIXEL baudrate.
@@ -79,7 +77,7 @@ namespace ServoAX12
     void InitServo(ServoMotion &servo)
     {
         print("Init Servo ID : %i name : %s", servo.id, servo.name.c_str());
-        if (_simulation)
+        if (simulation)
         {
             servo.position = servo.command_position = (float)servo.positionMin;
             println("Servo %s %d position: %f", servo.name, servo.id, servo.position);
@@ -132,7 +130,7 @@ namespace ServoAX12
 
     void StopServo(ServoMotion &servo)
     {
-        if (!_simulation)
+        if (!simulation)
         {
             dxl.torqueOff(servo.id);
             dxl.ledOff(servo.id);
@@ -150,7 +148,7 @@ namespace ServoAX12
 
     void StartServo(ServoMotion &servo)
     {
-        if (!_simulation)
+        if (!simulation)
             dxl.torqueOn(servo.id);
     }
 
@@ -165,7 +163,7 @@ namespace ServoAX12
 
     void UpdateServo(ServoMotion &servo)
     {
-        if (_simulation)
+        if (simulation)
         {
             servo.position = servo.position + (servo.command_position - servo.position) / 2;
         }
@@ -178,7 +176,7 @@ namespace ServoAX12
             if (!servo.ledState)
             {
                 servo.ledState = true;
-                if (!_simulation)
+                if (!simulation)
                     dxl.ledOn(servo.id);
             }
             servo.IsMoving = true;
@@ -188,7 +186,7 @@ namespace ServoAX12
             if (servo.ledState)
             {
                 servo.ledState = false;
-                if (!_simulation)
+                if (!simulation)
                     dxl.ledOff(servo.id);
             }
             servo.IsMoving = false;
@@ -229,7 +227,7 @@ namespace ServoAX12
         }
         Servos.at(id).command_position = position;
         Servos.at(id).IsMoving = true;
-        if(!_simulation)
+        if (!simulation)
             dxl.setGoalPosition((uint8_t)id, Servos.at(id).command_position, UNIT_DEGREE);
     }
 
