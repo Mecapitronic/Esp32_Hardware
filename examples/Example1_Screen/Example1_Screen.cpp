@@ -10,12 +10,12 @@ using namespace Printer;
 void setup(void)
 {
     ESP32_Helper::Initialisation();
-    
     Wire.begin(SDA, SCL, 400000UL);
     Screen::Init();
+    Screen::Logo();
+    delay(1000);
 }
 
-int32_t cpt = 0;
 void loop(void)
 {
     for (size_t i = 1; i < 5; i++)
@@ -23,7 +23,6 @@ void loop(void)
         Screen::Text("Mecapi", i);
         delay(1000);
     }
-    delay(1000);
-    Screen::Logo();
+    Screen::ShowIHM();
     delay(1000);
 }
