@@ -7,10 +7,13 @@
 #ifndef ESP32_HARDWARE_H
 #define ESP32_HARDWARE_H
 
+#ifndef HARDWARE_CONFIG_H
+#include "Hardware_Config_Base.h"
+#endif
+
 #include "ESP32_Helper.h"
 #include "ScreenSSD1306.h"
 #include "ServoAX12.h"
-#include "main.h"
 #include <Adafruit_INA219.h>
 #include <Wire.h>
 

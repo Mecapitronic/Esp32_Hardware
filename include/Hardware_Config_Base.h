@@ -1,6 +1,8 @@
 #ifndef HARDWARE_CONFIG_H
 #define HARDWARE_CONFIG_H
 
+constexpr bool simulation = true;
+
 namespace Hardware_Config
 {
     enum class ServoPosition

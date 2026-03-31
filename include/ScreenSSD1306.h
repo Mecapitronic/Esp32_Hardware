@@ -6,9 +6,6 @@
 #include <Wire.h>
 
 #include "ESP32_Hardware.h"
-#ifndef HARDWARE_CONFIG_H
-#include "Hardware_Config_Base.h"
-#endif
 
 using namespace Hardware_Config;
 
