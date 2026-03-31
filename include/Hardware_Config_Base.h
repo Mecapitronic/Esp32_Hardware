@@ -1,7 +1,14 @@
 #ifndef HARDWARE_CONFIG_H
 #define HARDWARE_CONFIG_H
 
+// Copy this file to your include project folder and change it's name to Hardware_Config.h
+// Then you can modify the one in your project at your convenience
+
+#ifdef SIMULATOR
 constexpr bool simulation = true;
+#else
+constexpr bool simulation = false;
+#endif
 
 namespace Hardware_Config
 {
