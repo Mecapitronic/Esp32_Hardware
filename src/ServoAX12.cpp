@@ -35,7 +35,7 @@ namespace ServoAX12
 
         Servos.clear();
         
-        taskUpdateServo = TaskThread(TaskUpdateServo, "TaskUpdateServo", 2000, 15, 1);
+        taskUpdateServo = TaskThread(TaskUpdateServo, "TaskUpdateServo", 2000, 15, 0);
     }
     
     void TaskUpdateServo(void *pvParameters)
