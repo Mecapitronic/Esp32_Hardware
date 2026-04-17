@@ -27,5 +27,18 @@ namespace Hardware_Config
         Test = 0,           // Servo pour soulever la planche
         BroadCast = 0xFE    // Broadcast ID pour communiquer avec tous les servos
     };
+    
+    //******************** Pins IHM
+    constexpr size_t PIN_SWITCH = 14;
+    constexpr size_t PIN_TEAM = 13;
+    constexpr size_t PIN_BAU = 15;
+    constexpr size_t PIN_START = 16;
+
+    //******************** Pins LED - RGB
+    constexpr size_t PIN_RGB_LED = 38;
+
+    //******************** Pins Enable Power
+    constexpr size_t PIN_EN_MCU = 3;
+
 }
 #endif
