@@ -18,7 +18,7 @@ namespace IHM
         Timeout ledTimeOut;
 
         TaskThread taskUpdateIHM;
-        CLEDController *LEDcontroller;
+        CLEDController* LEDcontroller = nullptr;
         CRGB builtin_led;
     } // namespace
 
@@ -150,6 +150,7 @@ namespace IHM
                 builtin_led = bauReady ? CRGB::Black : CRGB::Red;
             }
         }
+        if (!LEDcontroller) return;  // Vérification simple
         LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
     }
 
