@@ -11,18 +11,10 @@ void setup(void)
 {
     ESP32_Helper::Initialisation();
     Wire.begin(SDA, SCL, 400000UL);
-    Screen::Init();
-    Screen::Logo();
-    delay(1000);
+    Screen::Initialisation();
 }
 
 void loop(void)
 {
-    for (size_t i = 1; i < 5; i++)
-    {
-        Screen::Text("Mecapi", i);
-        delay(1000);
-    }
-    Screen::ShowIHM();
     delay(1000);
 }

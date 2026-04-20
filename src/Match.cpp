@@ -44,14 +44,18 @@ namespace Match
 
     void CheckEndOfMatch()
     {
-        if ((matchState == State::MATCH_RUN) || (matchState == State::MATCH_STOP))
+        if ((matchState == State::MATCH_RUN) || (matchState == State::MATCH_STOP) && IHM::switchMode == 1)
         {
             // robot still running or waiting for end of match
             elapsedTime = millis() - startTime;
-            if (elapsedTime >= time_end_match && IHM::switchMode == 1)
+            if (elapsedTime >= time_end_match)
             {
                 matchState = State::MATCH_END;
             }
+        }
+        if(matchState == State::MATCH_STOP && IHM::switchMode == 0 && IHM::tirettePresent == 1)
+        {
+            matchState = State::MATCH_END;
         }
     }
 

@@ -11,11 +11,10 @@ void setup(void)
 {
     ESP32_Helper::Initialisation();
     IHM::Initialisation();
-    Match::startMatchTimer();
+    Match::Initialisation();
 }
 
 void loop(void)
 {
-    Match::CheckEndOfMatch();
     delay(1000);
 }

@@ -9,12 +9,12 @@
 
 namespace IHM
 {
-    // Bleu = 0
-    // Jaune = 1
+    // Jaune = 0
+    // Bleu  = 1 
     enum class Team
     {
-        Bleu,
         Jaune,
+        Bleu,
         None
     };
 

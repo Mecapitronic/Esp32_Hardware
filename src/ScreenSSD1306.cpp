@@ -11,9 +11,8 @@ static const uint8_t I2C_SDA = SDA;
 static const uint8_t I2C_SCL = SCL;
 static const uint32_t clk = 400000UL;
 
-#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS                                                                   \
-    0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
 namespace Screen
 {
@@ -38,12 +37,13 @@ namespace Screen
         constexpr uint8_t line6 = pixelHeightFontSize * fontSize * 5;
         constexpr uint8_t line7 = pixelHeightFontSize * fontSize * 6;
         constexpr uint8_t line8 = pixelHeightFontSize * fontSize * 7;
+
+        TaskThread taskUpdateScreen;
     } // namespace
 
     // Initialize the OLED display.
-    void Init(void)
+    void Initialisation(void)
     {
-
         // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
         if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
         {
@@ -55,6 +55,11 @@ namespace Screen
         }
         // Clear the buffer
         display.clearDisplay();
+
+        Screen::Logo();
+        delay(500);
+
+        taskUpdateScreen = TaskThread(TaskUpdateScreen, "TaskUpdateScreen", 2000, 15, 0);
     }
 
     // Clear contents of display buffer (set all pixels to off).
@@ -116,71 +121,118 @@ namespace Screen
         display.display();
     }
 
-    int time = 0;
     bool color = 0;
 
-    void ShowIHM()
+    void TaskUpdateScreen(void *pvParameters)
     {
-        display.clearDisplay();
-        String text = "";
+        println("Start Task Update Screen");
+        while (true)
+        {
+            try
+            {
+                display.clearDisplay();
+                String text = "";
 
-        // -----------------------------------
-        // Top Left
-        Text("MATCH", fontSize, 0, line1);
-        Text("JAUNE", fontSize, 0, line2);
+                // -----------------------------------
+                // Top Left
+                if (IHM::switchMode == 0)
+                    Text("TEST", fontSize, 0, line1);
+                else if (IHM::switchMode == 1)
+                    Text("MATCH", fontSize, 0, line1);
+                else
+                    Text("MODE ?", fontSize, 0, line1);
 
-        // Top Center
-        text = "BAU";
-        Text(text,
-             2,
-             SCREEN_WIDTH / 2 - pixelWidthFontSize * 2 * text.length() / 2,
-             0,
-             (color ? 1 : 0));
-        color = !color;
+                if (IHM::team == IHM::Team::Jaune)
+                    Text("JAUNE", fontSize, 0, line2);
+                else if (IHM::team == IHM::Team::Bleu)
+                    Text("BLEU", fontSize, 0, line2);
+                else
+                    Text("COLOR", fontSize, 0, line2);
 
-        // Top Right
-        text = "WAIT";
-        Text(text,
-             fontSize,
-             SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
-             line1);
-        int min = time / 60; 
-        int sec = time % 60;
-        text = String(min) + ":" + (sec < 10 ? "0" : "") + String(sec);
-        Text(text,
-             fontSize,
-             SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
-             line2);
-        time++;
+                // Top Center
+                text = "BAU";
+                Text(text,
+                     2,
+                     SCREEN_WIDTH / 2 - pixelWidthFontSize * 2 * text.length() / 2,
+                     0,
+                     (color ? 1 : 0));
+                if (IHM::bauReady == 0)
+                    color = !color;
+                else if (IHM::bauReady == 1)
+                    color = 0;
+                else
+                    color = 1;
 
-        // -----------------------------------
-        // Mid Left
-        Text("X  200", 1, 0, line4);
-        Text("Y 1500", 1, 0, line5);
-        Text("A  180", 1, 0, line6);
+                // Top Right
+                switch (Match::matchState)
+                {
+                case Match::State::MATCH_BOOT:
+                    text = "BOOT";
+                    break;
+                case Match::State::MATCH_WAIT:
+                    text = "WAIT";
+                    break;
+                case Match::State::MATCH_RUN:
+                    text = "RUN";
+                    break;
+                case Match::State::MATCH_STOP:
+                    text = "STOP";
+                    break;
+                case Match::State::MATCH_END:
+                    text = "END";
+                    break;
+                default:
+                    break;
+                }
+                Text(text,
+                     fontSize,
+                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
+                     line1);
 
+                int time = Match::getMatchTimeSec();
+                int min = time / 60;
+                int sec = time % 60;
+                text = String(min) + ":" + (sec < 10 ? "0" : "") + String(sec);
+                Text(text,
+                     fontSize,
+                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
+                     line2);
 
-        // -----------------------------------
-        // Bottom
-        display.drawBitmap(0,
-                           line8,
-                           battery_0_bmp,
-                           battery_bmp_width,
-                           battery_bmp_height,
-                           1);
-        text = " 12.25V 1.25A";
-        Text(text,
-             fontSize,
-             battery_bmp_width,
-             SCREEN_HEIGHT - pixelHeightFontSize * fontSize);
-            
-        display.drawBitmap(SCREEN_WIDTH-wifi_bmp_width,
-                           line8,
-                           wifi_bmp,
-                           wifi_bmp_width,
-                           wifi_bmp_height,
-                           1);
-        display.display();
+                // -----------------------------------
+                // Mid Left
+                Text("X  200", 1, 0, line4);
+                Text("Y 1500", 1, 0, line5);
+                Text("A  180", 1, 0, line6);
+
+                // -----------------------------------
+                // Bottom
+                display.drawBitmap(0,
+                                   line8,
+                                   battery_0_bmp,
+                                   battery_bmp_width,
+                                   battery_bmp_height,
+                                   1);
+                text = " 12.25V 1.25A";
+                Text(text,
+                     fontSize,
+                     battery_bmp_width,
+                     SCREEN_HEIGHT - pixelHeightFontSize * fontSize);
+
+                display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
+                                   line8,
+                                   wifi_bmp,
+                                   wifi_bmp_width,
+                                   wifi_bmp_height,
+                                   1);
+                display.display();
+            }
+            catch (const std::exception &e)
+            {
+                printError(e.what());
+            }
+            vTaskDelay(100);
+        }
+        println("Screen Update Task STOPPED !");
     }
 
 } // namespace Screen

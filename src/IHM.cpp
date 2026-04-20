@@ -51,17 +51,17 @@ namespace IHM
             ledTimeOut.timeOut = 500;
         }
 
-        // LEDcontroller = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED,
-        // RGB>(&builtin_led, 1);
+        LEDcontroller = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
         builtin_led = CRGB::Black;
-        // LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
+        LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
 
         taskUpdateIHM = TaskThread(TaskUpdateIHM, "TaskUpdateIHM", 2000, 15, 0);
         
         println("Vérifier que le BAU est retiré pour démarrer le robot");
         while (bauReady != 1)
         {
-            delay(1);
+            println("[!] Retirer le BAU [!]");
+            delay(500);
         }
     }
 
@@ -150,7 +150,7 @@ namespace IHM
                 builtin_led = bauReady ? CRGB::Black : CRGB::Red;
             }
         }
-        // LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
+        LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
     }
 
     void PrintAll()
@@ -174,7 +174,7 @@ namespace IHM
     {
         print("Switch  : ");
         if (switchMode == 1)
-            println("OK");
+            println("MATCH");
         else
             println("TEST");
     }
