@@ -252,21 +252,39 @@ namespace Screen
                      fontSize,
                      battery_bmp_width,
                      SCREEN_HEIGHT - pixelHeightFontSize * fontSize);
-
+                
+                colorWifi = 1;
                 if (Wifi_Helper::IsEnable())
                 {
-                    if((!Wifi_Helper::IsWifiConnected() || !Wifi_Helper::IsClientConnected()) && blinkTimeOut.IsTimeOut())
-                        colorWifi = !colorWifi;
-                    else
-                        colorWifi = 1;
-
-                    display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
+                    if (Wifi_Helper::IsClientConnected())
+                    {
+                        display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
                                        line8,
-                                       wifi_bmp,
+                                       wifi_ok_bmp,
                                        wifi_bmp_width,
                                        wifi_bmp_height,
                                        (colorWifi ? 1 : 0));
+                    }
+                    else if (Wifi_Helper::IsWifiConnected())
+                    {
+                        display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
+                                       line8,
+                                       wifi_on_bmp,
+                                       wifi_bmp_width,
+                                       wifi_bmp_height,
+                                       (colorWifi ? 1 : 0));
+                    }
+                    else
+                    {
+                        display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
+                                        line8,
+                                        wifi_off_bmp,
+                                        wifi_bmp_width,
+                                        wifi_bmp_height,
+                                        (colorWifi ? 1 : 0));
+                    }
                 }
+
                 display.display();
             }
             catch (const std::exception &e)
