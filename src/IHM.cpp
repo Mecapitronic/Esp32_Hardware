@@ -1,7 +1,6 @@
 #include "IHM.h"
-
 using namespace Printer;
-using namespace std;
+using namespace Hardware_Config;
 
 namespace IHM
 {
@@ -26,20 +25,20 @@ namespace IHM
     void Initialisation()
     {
         // Tirette
-        pinMode(PIN_START, INPUT_PULLUP);
+        pinMode(Hardware_Config::PIN_START, INPUT_PULLUP);
 
         // Switch Color
-        pinMode(PIN_TEAM, INPUT_PULLUP);
+        pinMode(Hardware_Config::PIN_TEAM, INPUT_PULLUP);
 
         // Switch Switch
-        pinMode(PIN_SWITCH, INPUT_PULLUP);
+        pinMode(Hardware_Config::PIN_SWITCH, INPUT_PULLUP);
 
         // Boutton Arret d'Urgence
-        pinMode(PIN_BAU, INPUT);
+        pinMode(Hardware_Config::PIN_BAU, INPUT);
 
         ledTimeOut.Start(1000);
 
-        tirettePresent = !digitalRead(PIN_START);
+        tirettePresent = !digitalRead(Hardware_Config::PIN_START);
         if (tirettePresent == 1)
         {
             println("Tirette : Présente au démarrage");
@@ -73,7 +72,7 @@ namespace IHM
             try
             {
                 // Lecture du bouton Team Yellow / Blue
-                Team teamTmp = (Team)digitalRead(PIN_TEAM);
+                Team teamTmp = (Team)digitalRead(Hardware_Config::PIN_TEAM);
                 if (teamTmp != team)
                 {
                     team = teamTmp;
@@ -81,7 +80,7 @@ namespace IHM
                 }
 
                 // Lecture du bouton Switch TEST / OK
-                int switchTmp = digitalRead(PIN_SWITCH);
+                int switchTmp = digitalRead(Hardware_Config::PIN_SWITCH);
                 if (switchTmp != switchMode)
                 {
                     switchMode = switchTmp;
@@ -89,7 +88,7 @@ namespace IHM
                 }
 
                 // Lecture de la tirette
-                int tiretteTmp = !digitalRead(PIN_START);
+                int tiretteTmp = !digitalRead(Hardware_Config::PIN_START);
                 if (tiretteTmp != tirettePresent)
                 {
                     tirettePresent = tiretteTmp;
@@ -97,7 +96,7 @@ namespace IHM
                 }
 
                 // Lecture du BAU
-                int bauTmp = digitalRead(PIN_BAU);
+                int bauTmp = digitalRead(Hardware_Config::PIN_BAU);
                 if (bauTmp != bauReady)
                 {
                     bauReady = bauTmp;

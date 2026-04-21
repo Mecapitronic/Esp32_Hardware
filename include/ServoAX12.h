@@ -6,8 +6,6 @@
 
 #include "ESP32_Hardware.h"
 
-using namespace Hardware_Config;
-
 namespace ServoAX12
 {
     // https://github.com/ROBOTIS-GIT/Dynamixel2Arduino/tree/master
@@ -45,19 +43,19 @@ namespace ServoAX12
         uint8_t id;
         String name;
         float position;
-        ServoPosition positionMin;
-        ServoPosition positionMax;
+        Hardware_Config::ServoPosition positionMin;
+        Hardware_Config::ServoPosition positionMax;
         float command_position;
         bool IsMoving;
         bool ledState;
 
         ServoMotion()
         {
-            id = (uint8_t)ServoID::BroadCast;
+            id = (uint8_t)Hardware_Config::ServoID::BroadCast;
             name = "";
             position = 0;
-            positionMin = ServoPosition::Min;
-            positionMax = ServoPosition::Max;
+            positionMin = Hardware_Config::ServoPosition::Min;
+            positionMax = Hardware_Config::ServoPosition::Max;
             command_position = 0;
             IsMoving = false;
             ledState = false;
@@ -71,10 +69,10 @@ namespace ServoAX12
          * @param _acceleration Accélération maximale du servo moteur en degrés par
          * seconde carrée
          */
-        ServoMotion(ServoID _id,
+        ServoMotion(Hardware_Config::ServoID _id,
                     String _name,
-                    ServoPosition _positionMin,
-                    ServoPosition _positionMax)
+                    Hardware_Config::ServoPosition _positionMin,
+                    Hardware_Config::ServoPosition _positionMax)
         {
             // Initialisation des valeurs
             id = (uint8_t)_id;
@@ -100,7 +98,7 @@ namespace ServoAX12
     void InitAllServo();
     void InitServo(ServoMotion &servo);
     
-    void AddServo(ServoID id, String name, ServoPosition positionMin, ServoPosition positionMax);
+    void AddServo(Hardware_Config::ServoID id, String name, Hardware_Config::ServoPosition positionMin, Hardware_Config::ServoPosition positionMax);
 
     void StopAllServo();
     void StopServo(ServoMotion &servo);
@@ -112,21 +110,21 @@ namespace ServoAX12
     void UpdateServo(ServoMotion &servo);
 
     bool AreAllServoMoving();
-    bool IsServoMoving(ServoID id);
+    bool IsServoMoving(Hardware_Config::ServoID id);
 
-    void SetServoPosition(ServoID id, ServoPosition position);
-    void SetServoPosition(ServoID id, float position);
+    void SetServoPosition(Hardware_Config::ServoID id, Hardware_Config::ServoPosition position);
+    void SetServoPosition(Hardware_Config::ServoID id, float position);
     
     void HandleCommand(Command cmd);
     const void PrintCommandHelp();
     int16_t Scan();
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
-    void PrintDxlInfo(ServoID id = ServoID::BroadCast);
+    void PrintDxlInfo(Hardware_Config::ServoID id = Hardware_Config::ServoID::BroadCast);
 
     void TeleplotAllPosition();
-    void TeleplotPosition(ServoID id);
+    void TeleplotPosition(Hardware_Config::ServoID id);
     void PrintAllPosition();
-    void PrintPosition(ServoID id);
+    void PrintPosition(Hardware_Config::ServoID id);
 } // namespace ServoAX12
 
 namespace std

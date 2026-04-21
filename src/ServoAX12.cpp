@@ -1,6 +1,6 @@
 #include "ServoAX12.h"
-
 using namespace Printer;
+using namespace Hardware_Config;
 
 namespace ServoAX12
 {
@@ -16,7 +16,7 @@ namespace ServoAX12
         bool scanning = false;
 
         TaskThread taskUpdateServo;
-        std::unordered_map<ServoID, ServoMotion, std::hash<ServoID>> Servos;
+        std::unordered_map<Hardware_Config::ServoID, ServoMotion, std::hash<Hardware_Config::ServoID>> Servos;
     } // namespace
 
     void Initialisation(HardwareSerial &serial, int8_t rxPin, int8_t txPin,int8_t dirPin, BaudRate baudRate, DxlProtocolVersion dxlProtocolVersion)

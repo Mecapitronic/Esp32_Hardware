@@ -1,9 +1,9 @@
 #ifndef IHM_H
 #define IHM_H
 
-#include "ESP32_Helper.h"
+#include <FastLED.h>
+
 #include "ESP32_Hardware.h"
-#include "Match.h"
 
 #define BUILTIN_BRIGHTNESS 50 // Brightness of the built-in LED
 

@@ -1,7 +1,7 @@
 #ifndef LOGO_H
 #define LOGO_H
 
-#include "ESP32_Hardware.h"
+#include <cstdint>
 
         const uint8_t battery_bmp_width = 16;
         const uint8_t battery_bmp_height = 8;

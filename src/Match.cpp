@@ -1,7 +1,5 @@
 #include "Match.h"
-
 using namespace Printer;
-using namespace std;
 
 namespace Match
 {
@@ -154,7 +152,7 @@ namespace Match
                 if (Match::matchState == State::MATCH_END)
                 {
                     // Disable Motor & Servo Power
-                    digitalWrite(PIN_EN_MCU, LOW);
+                    digitalWrite(Hardware_Config::PIN_EN_MCU, LOW);
                     IHM::useBlink = false;
                     //ServoAX12::StopAllServo();
                 }

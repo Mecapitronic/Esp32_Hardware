@@ -1,7 +1,7 @@
 /**
  * @file ESP32_Hardware.h
  * @author Mecapitronic (mecapitronic@gmail.com)
- * @brief
+ * @brief Master header
  * @date 2026-03-06
  */
 #ifndef ESP32_HARDWARE_H
@@ -18,11 +18,5 @@
 #include "ScreenSSD1306.h"
 #include "ServoAX12.h"
 #include "PowerMonitor.h"
-#include <Adafruit_INA219.h>
-#include <FastLED.h>
-#include <Wire.h>
 
-// namespace ESP32_Hardware
-//{
-// }
 #endif

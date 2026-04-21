@@ -1,5 +1,4 @@
 #include "ScreenSSD1306.h"
-
 using namespace Printer;
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels

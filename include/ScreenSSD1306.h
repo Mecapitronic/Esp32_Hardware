@@ -8,8 +8,6 @@
 #include "ESP32_Hardware.h"
 #include "Logo.h"
 
-using namespace Hardware_Config;
-
 namespace Screen
 {
     void Initialisation(void);
