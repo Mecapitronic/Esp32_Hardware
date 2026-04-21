@@ -17,6 +17,7 @@
 #include "Match.h"
 #include "ScreenSSD1306.h"
 #include "ServoAX12.h"
+#include "PowerMonitor.h"
 #include <Adafruit_INA219.h>
 #include <FastLED.h>
 #include <Wire.h>
