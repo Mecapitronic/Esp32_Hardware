@@ -208,7 +208,6 @@ namespace Screen
                 // Bottom
                 float voltage_V = PowerMonitor::getBusVoltage_V();
                 float current_mA = PowerMonitor::getCurrent_mA();
-                // We compute the percentage of usefull Voltage left (between 9V and 12.6V) to display the battery level
                 float battPercent = (voltage_V - PowerMonitor::minVoltage_V) / (PowerMonitor::maxVoltage_V - PowerMonitor::minVoltage_V) * 100;
 
                 if (battPercent > 80)
@@ -247,7 +246,7 @@ namespace Screen
                                        battery_bmp_height,
                                        1);
 
-                text = " " + String(voltage_V, 2) + "V " + String(current_mA, 2) + "A";
+                text = " " + String(voltage_V, 2) + "V " + String(current_mA, 2) + "mA";
                 Text(text,
                      fontSize,
                      battery_bmp_width,
