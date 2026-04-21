@@ -38,6 +38,7 @@ namespace Screen
         constexpr uint8_t line8 = pixelHeightFontSize * fontSize * 7;
 
         TaskThread taskUpdateScreen;
+        Timeout blinkTimeOut;
     } // namespace
 
     // Initialize the OLED display.
@@ -57,6 +58,7 @@ namespace Screen
 
         Screen::Logo();
         delay(500);
+        blinkTimeOut.Start(500);
 
         taskUpdateScreen = TaskThread(TaskUpdateScreen, "TaskUpdateScreen", 2000, 15, 0);
     }
@@ -120,7 +122,8 @@ namespace Screen
         display.display();
     }
 
-    bool color = 0;
+    bool colorBAU = 0;
+    bool colorWifi = 0;
 
     void TaskUpdateScreen(void *pvParameters)
     {
@@ -146,7 +149,7 @@ namespace Screen
                 else if (IHM::team == IHM::Team::Bleu)
                     Text("BLEU", fontSize, 0, line2);
                 else
-                    Text("COLOR", fontSize, 0, line2);
+                    Text("COLOR ?", fontSize, 0, line2);
 
                 // Top Center
                 text = "BAU";
@@ -154,13 +157,11 @@ namespace Screen
                      2,
                      SCREEN_WIDTH / 2 - pixelWidthFontSize * 2 * text.length() / 2,
                      0,
-                     (color ? 1 : 0));
-                if (IHM::bauReady == 0)
-                    color = !color;
+                     (colorBAU ? 1 : 0));
+                if (IHM::bauReady == 0 && blinkTimeOut.IsTimeOut())
+                    colorBAU = !colorBAU;
                 else if (IHM::bauReady == 1)
-                    color = 0;
-                else
-                    color = 1;
+                    colorBAU = 0;
 
                 // Top Right
                 switch (Match::matchState)
@@ -205,24 +206,67 @@ namespace Screen
 
                 // -----------------------------------
                 // Bottom
-                display.drawBitmap(0,
-                                   line8,
-                                   battery_0_bmp,
-                                   battery_bmp_width,
-                                   battery_bmp_height,
-                                   1);
-                text = " 12.25V 1.25A";
+                float voltage_V = PowerMonitor::getBusVoltage_V();
+                float current_mA = PowerMonitor::getCurrent_mA();
+                // We compute the percentage of usefull Voltage left (between 9V and 12.6V) to display the battery level
+                float battPercent = (voltage_V - PowerMonitor::minVoltage_V) / (PowerMonitor::maxVoltage_V - PowerMonitor::minVoltage_V) * 100;
+
+                if (battPercent > 80)
+                    display.drawBitmap(0,
+                                       line8,
+                                       battery_4_bmp,
+                                       battery_bmp_width,
+                                       battery_bmp_height,
+                                       1);
+                else if (battPercent > 60)
+                    display.drawBitmap(0,
+                                       line8,
+                                       battery_3_bmp,
+                                       battery_bmp_width,
+                                       battery_bmp_height,
+                                       1);
+                else if (battPercent > 40)
+                    display.drawBitmap(0,
+                                       line8,
+                                       battery_2_bmp,
+                                       battery_bmp_width,
+                                       battery_bmp_height,
+                                       1);
+                else if (battPercent > 20)
+                    display.drawBitmap(0,
+                                       line8,
+                                       battery_1_bmp,
+                                       battery_bmp_width,
+                                       battery_bmp_height,
+                                       1);
+                else
+                    display.drawBitmap(0,
+                                       line8,
+                                       battery_0_bmp,
+                                       battery_bmp_width,
+                                       battery_bmp_height,
+                                       1);
+
+                text = " " + String(voltage_V, 2) + "V " + String(current_mA, 2) + "A";
                 Text(text,
                      fontSize,
                      battery_bmp_width,
                      SCREEN_HEIGHT - pixelHeightFontSize * fontSize);
 
-                display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
-                                   line8,
-                                   wifi_bmp,
-                                   wifi_bmp_width,
-                                   wifi_bmp_height,
-                                   1);
+                if (Wifi_Helper::IsEnable())
+                {
+                    if((!Wifi_Helper::IsWifiConnected() || !Wifi_Helper::IsClientConnected()) && blinkTimeOut.IsTimeOut())
+                        colorWifi = !colorWifi;
+                    else
+                        colorWifi = 1;
+
+                    display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
+                                       line8,
+                                       wifi_bmp,
+                                       wifi_bmp_width,
+                                       wifi_bmp_height,
+                                       (colorWifi ? 1 : 0));
+                }
                 display.display();
             }
             catch (const std::exception &e)

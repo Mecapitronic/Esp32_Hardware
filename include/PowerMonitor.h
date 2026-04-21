@@ -8,6 +8,9 @@
 
 namespace PowerMonitor
 {
+    constexpr float maxVoltage_V = 12.6; // Maximum voltage of the battery
+    constexpr float minVoltage_V = 11.0;  // Minimum voltage of the battery
+
     void Initialisation(void);
 
     float getBusVoltage_V();
