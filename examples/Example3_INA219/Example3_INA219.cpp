@@ -12,6 +12,7 @@ Adafruit_INA219 ina219;
 void setup(void)
 {
     ESP32_Helper::Initialisation();
+    Wire.begin(SDA, SCL, 400000UL);
     PowerMonitor::Initialisation();
 }
 
