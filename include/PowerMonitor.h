@@ -4,7 +4,7 @@
 #include <Adafruit_INA219.h>
 #include <Wire.h>
 
-#include "ESP32_Helper.h"
+#include "ESP32_Hardware.h"
 
 namespace PowerMonitor
 {
