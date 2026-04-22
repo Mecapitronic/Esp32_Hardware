@@ -41,8 +41,10 @@ namespace ServoAX12
     void TaskUpdateServo(void *pvParameters)
     {
         println("Start Task Update Servo");
+        Chrono chrono("Servo", 1000);
         while (true)
         {
+            chrono.Start();
             try
             {
                 if(!scanning)
@@ -54,6 +56,10 @@ namespace ServoAX12
             catch (const std::exception &e)
             {
                 printError(e.what());
+            }
+            if (chrono.Check() && Chrono::print)
+            {
+                printChrono(chrono);
             }
             vTaskDelay(10);
         }

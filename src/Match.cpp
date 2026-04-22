@@ -74,8 +74,10 @@ namespace Match
     void TaskUpdateMatch(void *pvParameters)
     {
         println("Start Task Update Match");
+        Chrono chrono("Match", 1000);
         while (true)
         {
+            chrono.Start();
             try
             {
                 // Etat au boot du robot, en attente de l'insertion de la tirette
@@ -160,6 +162,10 @@ namespace Match
             catch (std::exception const &e)
             {
                 printError(e.what());
+            }
+            if (chrono.Check() && Chrono::print)
+            {
+                printChrono(chrono);
             }
             vTaskDelay(10);
         }

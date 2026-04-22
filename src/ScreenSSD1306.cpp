@@ -128,8 +128,10 @@ namespace Screen
     void TaskUpdateScreen(void *pvParameters)
     {
         println("Start Task Update Screen");
+        Chrono chrono("Screen", 1000);
         while (true)
         {
+            chrono.Start();
             try
             {
                 display.clearDisplay();
@@ -289,6 +291,10 @@ namespace Screen
             catch (const std::exception &e)
             {
                 printError(e.what());
+            }
+            if (chrono.Check() && Chrono::print)
+            {
+                printChrono(chrono);
             }
             vTaskDelay(100);
         }

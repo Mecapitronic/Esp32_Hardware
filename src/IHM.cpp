@@ -67,8 +67,10 @@ namespace IHM
     void TaskUpdateIHM(void *pvParameters)
     {
         println("Start Task Update IHM");
+        Chrono chrono("IHM", 1000);
         while (true)
         {
+            chrono.Start();
             try
             {
                 // Lecture du bouton Team Yellow / Blue
@@ -107,6 +109,10 @@ namespace IHM
             catch (const std::exception &e)
             {
                 printError(e.what());
+            }
+            if (chrono.Check() && Chrono::print)
+            {
+                printChrono(chrono);
             }
             vTaskDelay(10);
         }
