@@ -1,5 +1,6 @@
 #include "ToF_VL53L8CX.h"
 using namespace Printer;
+using namespace Hardware_Config;
 
 namespace ToF_VL53L8CX
 {
@@ -65,36 +66,59 @@ namespace ToF_VL53L8CX
     void Initialisation()
     {
         println("Init VL53L8CX");
-        println("Initializing sensor board. This can take up to 10s. Please wait.");
-
-        // Time how long it takes to transfer firmware to sensor
-        long startTime = millis();
-        sensor.begin();
-        errorStatus = sensor.init();
-        long stopTime = millis();
-
-        if (errorStatus)
+        
+        if (!simulation)
         {
-            printError("Sensor initialization failed !");
+            println("Initializing sensor board. This can take up to 10s. Please wait.");
+
+            // Time how long it takes to transfer firmware to sensor
+            long startTime = millis();
+            sensor.begin();
+            errorStatus = sensor.init();
+            long stopTime = millis();
+
+            if (errorStatus)
+            {
+                printError("Sensor initialization failed !");
+            }
+            else
+            {
+                println("Sensor initialization successful !");
+            }
+
+            float timeTaken = (stopTime - startTime) / 1000.0;
+            println("Firmware transfer time: %0.3f s", timeTaken);
+
+            sensor.set_resolution(DEFAULT_RESOLUTION); // Enable all 64 pads (8x8)
+
+            sensor.get_resolution(&imageResolution); // Query sensor for current resolution
+            imageWidth = sqrt(imageResolution);      // Calculate printing width
+
+            // Using 4x4, min frequency is 1Hz and max is 60Hz
+            // Using 8x8, min frequency is 1Hz and max is 15Hz
+            sensor.set_ranging_frequency_hz(RANGING_FREQUENCY_HZ);
+
+            sensor.start_ranging();
         }
         else
         {
-            println("Sensor initialization successful !");
+            println("VL53L8CX init OK (SIMULATED)");
+            imageResolution = DEFAULT_RESOLUTION;
+            imageWidth = sqrt(imageResolution);
+            // Initialize simulated sensorData with default values
+            for (int i = 0; i < 64; i++)
+            {
+                sensorData.distance_mm[i] = 500; // 500mm default distance
+                sensorData.ambient_per_spad[i] = 100;
+                sensorData.nb_target_detected[i] = 1;
+                sensorData.nb_spads_enabled[i] = 16;
+                sensorData.signal_per_spad[i] = 1000;
+                sensorData.range_sigma_mm[i] = 100;
+                sensorData.target_status[i] = 0;
+                sensorData.reflectance[i] = 50;
+            }
+            errorStatus = 0;
         }
-
-        float timeTaken = (stopTime - startTime) / 1000.0;
-        println("Firmware transfer time: %0.3f s", timeTaken);
-
-        sensor.set_resolution(DEFAULT_RESOLUTION); // Enable all 64 pads (8x8)
-
-        sensor.get_resolution(&imageResolution); // Query sensor for current resolution
-        imageWidth = sqrt(imageResolution);      // Calculate printing width
-
-        // Using 4x4, min frequency is 1Hz and max is 60Hz
-        // Using 8x8, min frequency is 1Hz and max is 15Hz
-        sensor.set_ranging_frequency_hz(RANGING_FREQUENCY_HZ);
-
-        sensor.start_ranging();
 
         measurementStartTime = millis();
 
@@ -111,14 +135,25 @@ namespace ToF_VL53L8CX
             chrono.Start();
             try
             {
-                if (!newDataReady)
+                if (!simulation)
                 {
-                    errorStatus = sensor.check_data_ready(&newDataReady);
+                    if (!newDataReady)
+                    {
+                        errorStatus = sensor.check_data_ready(&newDataReady);
+                    }
+                    if ((!errorStatus) && (newDataReady != 0))
+                    {
+                        errorStatus = sensor.get_ranging_data(&sensorData); // Read distance data
+                        newDataReady = 0;
+                    }
                 }
-                if ((!errorStatus) && (newDataReady != 0))
+                else
                 {
-                    errorStatus = sensor.get_ranging_data(&sensorData); // Read distance data
-                    newDataReady = 0;
+                    // Simulate data by slightly varying distance values
+                    for (int i = 0; i < 64; i++)
+                    {
+                        sensorData.distance_mm[i] += random(-10, 10);
+                    }
                 }
             }
             catch (const std::exception &e)
