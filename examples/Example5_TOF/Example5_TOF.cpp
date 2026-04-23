@@ -15,10 +15,7 @@ void setup(void)
     ESP32_Helper::Initialisation();
     Wire.begin(SDA, SCL, 400000UL);
     ToF_VL53L8CX::Initialisation();
-    
-    // Update sensor data
-    ToF_VL53L8CX::Update();
-    
+        
     // Display sensor resolution and status
     println("Resolution: %u pixels (%ux%u)",
             ToF_VL53L8CX::getImageResolution(),
@@ -28,10 +25,7 @@ void setup(void)
 
 void loop(void)
 {
-    // Update sensor data
-    ToF_VL53L8CX::Update();
-
-    // Send data to be diiplay in Processing
+    // Send data to be display in Processing
     ToF_VL53L8CX::printProcessing();
     
     // Display raw distance data

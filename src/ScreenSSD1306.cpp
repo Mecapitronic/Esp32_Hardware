@@ -128,7 +128,7 @@ namespace Screen
     void TaskUpdateScreen(void *pvParameters)
     {
         println("Start Task Update Screen");
-        Chrono chrono("Screen", 1000);
+        Chrono chrono("Screen", 100);
         while (true)
         {
             chrono.Start();
@@ -292,7 +292,7 @@ namespace Screen
             {
                 printError(e.what());
             }
-            if (chrono.Check() && Chrono::print)
+            if (chrono.Check())
             {
                 printChrono(chrono);
             }

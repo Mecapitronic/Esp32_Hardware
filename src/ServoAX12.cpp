@@ -57,7 +57,7 @@ namespace ServoAX12
             {
                 printError(e.what());
             }
-            if (chrono.Check() && Chrono::print)
+            if (chrono.Check())
             {
                 printChrono(chrono);
             }

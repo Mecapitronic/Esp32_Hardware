@@ -163,7 +163,7 @@ namespace Match
             {
                 printError(e.what());
             }
-            if (chrono.Check() && Chrono::print)
+            if (chrono.Check())
             {
                 printChrono(chrono);
             }

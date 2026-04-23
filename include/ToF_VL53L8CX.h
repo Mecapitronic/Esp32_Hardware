@@ -9,11 +9,8 @@ namespace ToF_VL53L8CX
     constexpr uint16_t DEFAULT_RESOLUTION = 64;  // 8x8 resolution
     constexpr uint8_t RANGING_FREQUENCY_HZ = 5;  // 5Hz measurement rate
 
-    // Initialization
     void Initialisation();
-
-    // Data access
-    void Update();
+    void TaskUpdateVL53(void *pvParameters);
 
     // Getters for sensor data
     const VL53L8CX_ResultsData& getSensorData();
