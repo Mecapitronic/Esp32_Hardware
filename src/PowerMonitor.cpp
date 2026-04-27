@@ -11,8 +11,8 @@ namespace PowerMonitor
         // Simulated values for SIMULATOR mode
         float simulatedBusVoltage_V = 12.0f;
         float simulatedShuntVoltage_mV = 10.0f;
-        float simulatedCurrent_mA = 1000.0f;
-        float simulatedPower_mW = 12000.0f;
+        float simulatedCurrent_mA = 500.0f;
+        float simulatedPower_mW = 6000.0f;
     } // namespace
 
     void Initialisation(void)

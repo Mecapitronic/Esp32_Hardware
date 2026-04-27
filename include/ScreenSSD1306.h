@@ -8,6 +8,17 @@
 #include "ESP32_Hardware.h"
 #include "Logo.h"
 
+/* Représention ASCII de l'afficheur
+    MODE ?        BAU         STATE
+    COLOR ?       BAU          0:00
+
+    X  200                     AX12
+    Y 1500                   1: 123
+    A  180                   2: 123
+
+    BAT 12.00V 0,25mA             WIFI
+*/
+
 namespace Screen
 {
     void Initialisation(void);

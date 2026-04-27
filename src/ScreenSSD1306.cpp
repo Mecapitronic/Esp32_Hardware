@@ -209,12 +209,12 @@ namespace Screen
                 // -----------------------------------
                 // Mid Right
                 Text("AX12", fontSize, SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(), line4);
-                text = "1: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 2);
+                text = "1: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 0);
                 Text(text,
                      fontSize,
                      SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
                      line5);
-                text = "2: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 2);
+                text = "2: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 0);
                 Text(text,
                      fontSize,
                      SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
@@ -262,7 +262,7 @@ namespace Screen
                                        battery_bmp_height,
                                        1);
 
-                text = " " + String(voltage_V, 2) + "V " + String(current_mA, 2) + "mA";
+                text = " " + String(voltage_V, 2) + "V " + String(current_mA, 0) + "mA";
                 Text(text,
                      fontSize,
                      battery_bmp_width,
