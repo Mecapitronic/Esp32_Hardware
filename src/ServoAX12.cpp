@@ -17,6 +17,17 @@ namespace ServoAX12
 
         TaskThread taskUpdateServo;
         std::unordered_map<Hardware_Config::ServoID, ServoMotion, std::hash<Hardware_Config::ServoID>> Servos;
+
+        // Check if servo exists and log error if not
+        bool ServoExists(ServoID id)
+        {
+            if (Servos.find(id) == Servos.end())
+            {
+                printError("Servo ID " + String((uint8_t)id) + " not found");
+                return false;
+            }
+            return true;
+        }
     } // namespace
 
     void Initialisation(HardwareSerial &serial, int8_t rxPin, int8_t txPin,int8_t dirPin, BaudRate baudRate, DxlProtocolVersion dxlProtocolVersion)
@@ -69,7 +80,8 @@ namespace ServoAX12
     void AddServo(ServoID id, String name, ServoPosition positionMin, ServoPosition positionMax)
     {
         Servos[id] = ServoMotion(id, name, positionMin, positionMax);
-        InitServo(Servos.at(id));
+        if (ServoExists(id))
+            InitServo(Servos.at(id));
     }
     
     void InitAllServo()
@@ -213,6 +225,8 @@ namespace ServoAX12
 
     bool IsServoMoving(ServoID id)
     {
+        if (!ServoExists(id))
+            return false;
         return Servos.at(id).IsMoving;
     }
     
@@ -223,22 +237,28 @@ namespace ServoAX12
 
     void SetServoPosition(ServoID id, float position)
     {
-        if (position < (float)Servos.at(id).positionMin || position > (float)Servos.at(id).positionMax)
+        if (!ServoExists(id))
+            return;
+        
+        ServoMotion &servo = Servos.at(id);
+        if (position < (float)servo.positionMin || position > (float)servo.positionMax)
         {
             println("Position out of range for Servo ID : %i", id);
             println("Position : %f", position);
-            println("Min : %f", (float)Servos.at(id).positionMin);
-            println("Max : %f", (float)Servos.at(id).positionMax);
+            println("Min : %f", (float)servo.positionMin);
+            println("Max : %f", (float)servo.positionMax);
             return;
         }
-        Servos.at(id).command_position = position;
-        Servos.at(id).IsMoving = true;
+        servo.command_position = position;
+        servo.IsMoving = true;
         if (!simulation)
-            dxl.setGoalPosition((uint8_t)id, Servos.at(id).command_position, UNIT_DEGREE);
+            dxl.setGoalPosition((uint8_t)id, servo.command_position, UNIT_DEGREE);
     }
 
     float GetServoPosition(ServoID id)
     {
+        if (!ServoExists(id))
+            return -1.0f;
         return Servos.at(id).position;
     }
 
@@ -286,7 +306,7 @@ namespace ServoAX12
                 ServoID id = static_cast<ServoID>(cmd.data[0]);
                 print("AX12 Servo id: %i ", id);
                 float position = static_cast<float>(cmd.data[1]);
-                if (Servos.find(id) != Servos.end())
+                if (ServoExists(id))
                 {
                     println("Set Position : %f", position);
                     SetServoPosition(id, position);
@@ -402,8 +422,12 @@ namespace ServoAX12
         {
             if (dxl.ping((uint8_t)id))
             {
-                println("ID : %i, Name: %s, Model Number: %i, position: %f, command: %f, isMoving: %i",
-                     (uint8_t)id, Servos.at(id).name, dxl.getModelNumber((uint8_t)id), Servos.at(id).position, Servos.at(id).command_position, Servos.at(id).IsMoving);
+                if (ServoExists(id))
+                {
+                    ServoMotion &servo = Servos.at(id);
+                    println("ID : %i, Name: %s, Model Number: %i, position: %f, command: %f, isMoving: %i",
+                        (uint8_t)id, servo.name, dxl.getModelNumber((uint8_t)id), servo.position, servo.command_position, servo.IsMoving);
+                }
             }
             else
             {
@@ -430,7 +454,7 @@ namespace ServoAX12
     
     void TeleplotPosition(ServoID id)
     {
-        if (Servos.find(id) != Servos.end())
+        if (ServoExists(id))
         {
             auto &servo = Servos.at(id);
             teleplot("Servo " + servo.name + " " + String(servo.id), servo.position);
@@ -447,7 +471,7 @@ namespace ServoAX12
 
     void PrintPosition(ServoID id)
     {
-        if (Servos.find(id) != Servos.end())
+        if (ServoExists(id))
         {
             auto &servo = Servos.at(id);
             println("Servo %s %d : %f", servo.name, servo.id, servo.position);
