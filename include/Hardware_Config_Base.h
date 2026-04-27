@@ -1,6 +1,6 @@
 #ifndef HARDWARE_CONFIG_H
 #define HARDWARE_CONFIG_H
-
+#include <cstddef>
 // Copy this file to your include project folder and change it's name to Hardware_Config.h
 // Then you can modify the one in your project at your convenience
 

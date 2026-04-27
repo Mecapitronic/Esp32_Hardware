@@ -9,7 +9,9 @@
 
 #include "ESP32_Helper.h"
 
-#ifndef HARDWARE_CONFIG_H
+#if __has_include("../../../include/Hardware_Config.h")
+#include "../../../include/Hardware_Config.h"
+#else
 #include "Hardware_Config_Base.h"
 #endif
 
