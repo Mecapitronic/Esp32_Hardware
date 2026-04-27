@@ -237,6 +237,11 @@ namespace ServoAX12
             dxl.setGoalPosition((uint8_t)id, Servos.at(id).command_position, UNIT_DEGREE);
     }
 
+    float GetServoPosition(ServoID id)
+    {
+        return Servos.at(id).position;
+    }
+
     void HandleCommand(Command cmd)
     {
         if (cmd.cmd == "AX12Scan")
@@ -318,7 +323,7 @@ namespace ServoAX12
         }
         else
         {
-            println("Unknown command : ", cmd.cmd);
+            println("Unknown command : %s", cmd.cmd.c_str());
         }
     }
 

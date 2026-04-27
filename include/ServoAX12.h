@@ -114,6 +114,8 @@ namespace ServoAX12
 
     void SetServoPosition(Hardware_Config::ServoID id, Hardware_Config::ServoPosition position);
     void SetServoPosition(Hardware_Config::ServoID id, float position);
+
+    float GetServoPosition(Hardware_Config::ServoID id);
     
     void HandleCommand(Command cmd);
     const void PrintCommandHelp();
