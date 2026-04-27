@@ -54,7 +54,7 @@ namespace IHM
         builtin_led = CRGB::Black;
         LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
 
-        taskUpdateIHM = TaskThread(TaskUpdateIHM, "TaskUpdateIHM", 2000, 15, 0);
+        taskUpdateIHM = TaskThread(TaskUpdateIHM, "TaskUpdateIHM", 10000, 15, 0);
         
         println("Vérifier que le BAU est retiré pour démarrer le robot");
         while (bauReady != 1)

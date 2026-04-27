@@ -60,7 +60,7 @@ namespace Screen
         delay(500);
         blinkTimeOut.Start(500);
 
-        taskUpdateScreen = TaskThread(TaskUpdateScreen, "TaskUpdateScreen", 2000, 15, 0);
+        taskUpdateScreen = TaskThread(TaskUpdateScreen, "TaskUpdateScreen", 10000, 15, 0);
     }
 
     // Clear contents of display buffer (set all pixels to off).
