@@ -207,6 +207,20 @@ namespace Screen
                 Text("A  180", 1, 0, line6);
 
                 // -----------------------------------
+                // Mid Right
+                Text("AX12", fontSize, SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(), line4);
+                text = "1: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 2);
+                Text(text,
+                     fontSize,
+                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
+                     line5);
+                text = "2: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 2);
+                Text(text,
+                     fontSize,
+                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
+                     line6);
+                
+                // -----------------------------------
                 // Bottom
                 float voltage_V = PowerMonitor::getBusVoltage_V();
                 float current_mA = PowerMonitor::getCurrent_mA();
