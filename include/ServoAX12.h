@@ -40,25 +40,17 @@ namespace ServoAX12
      */
     struct ServoMotion
     {
-        uint8_t id;
-        String name;
-        float position;
-        Hardware_Config::ServoPosition positionMin;
-        Hardware_Config::ServoPosition positionMax;
-        float command_position;
-        bool IsMoving;
-        bool ledState;
+        uint8_t id = (uint8_t)Hardware_Config::ServoID::BroadCast;
+        String name = "";
+        float position = 0;
+        Hardware_Config::ServoPosition positionMin = Hardware_Config::ServoPosition::Min;
+        Hardware_Config::ServoPosition positionMax = Hardware_Config::ServoPosition::Max;
+        float command_position = 0;
+        bool IsMoving = false;
+        bool ledState = false;
 
         ServoMotion()
         {
-            id = (uint8_t)Hardware_Config::ServoID::BroadCast;
-            name = "";
-            position = 0;
-            positionMin = Hardware_Config::ServoPosition::Min;
-            positionMax = Hardware_Config::ServoPosition::Max;
-            command_position = 0;
-            IsMoving = false;
-            ledState = false;
         }
 
         /**
@@ -77,12 +69,8 @@ namespace ServoAX12
             // Initialisation des valeurs
             id = (uint8_t)_id;
             name = _name;
-            position = 0;
             positionMin = _positionMin;
             positionMax = _positionMax;
-            command_position = 0;
-            IsMoving = false;
-            ledState = false;
         }
 
         bool operator==(const ServoMotion &other) const

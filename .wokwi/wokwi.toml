@@ -1,6 +1,6 @@
 [wokwi]
 version = 1
-firmware = '../bin/firmware.bin'
-elf = '../bin/firmware.elf'
+firmware = '../.pio/build/main/firmware.bin'
+elf = '../.pio/build/main/firmware.elf'
 gdbServerPort=3333
 rfc2217ServerPort = 4000
