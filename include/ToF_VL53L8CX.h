@@ -2,6 +2,7 @@
 #define ToF_VL53L8CX_H
 
 #include "ESP32_Hardware.h"
+#include "vl53l8cx_platform_config_custom.h"
 #include <vl53l8cx.h>  //https://github.com/stm32duino/VL53L8CX
 
 namespace ToF_VL53L8CX
