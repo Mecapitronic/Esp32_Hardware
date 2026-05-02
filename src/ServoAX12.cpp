@@ -262,9 +262,9 @@ namespace ServoAX12
         return Servos.at(id).position;
     }
 
-    void HandleCommand(Command cmd)
+    bool HandleCommand(Command cmd)
     {
-        if (cmd.cmd == "AX12Scan")
+        if (cmd.cmdEquals("AX12Scan"))
         {
             //AX12Scan:1:1000000
             if (cmd.size == 2)
@@ -276,7 +276,7 @@ namespace ServoAX12
                 Scan();
             }
         }
-        else if (cmd.cmd == "AX12PrintInfo")
+        else if (cmd.cmdEquals("AX12PrintInfo"))
         {
             //AX12PrintInfo:1
             if (cmd.size == 1)
@@ -287,7 +287,7 @@ namespace ServoAX12
             else
                 PrintDxlInfo();
         }
-        else if (cmd.cmd == "AX12AddServo")
+        else if (cmd.cmdEquals("AX12AddServo"))
         {
             //AX12AddServo:1:Left:0:300
             if (cmd.size == 3 && cmd.dataStr1 != "")
@@ -298,8 +298,8 @@ namespace ServoAX12
                 AddServo(id, cmd.dataStr1, positionMin, positionMax);
             }
         }
-        else if (cmd.cmd == "AX12Pos")
-        {            
+        else if (cmd.cmdEquals("AX12Pos"))
+        {
             if (cmd.size == 2)
             {
                 // AX12Pos:1:100
@@ -327,27 +327,25 @@ namespace ServoAX12
                 PrintAllPosition();
             }
         }
-        else if (cmd.cmd == "AX12Stop")
+        else if (cmd.cmdEquals("AX12Stop"))
         {
             println("AX12Stop");
             StopAllServo();
         }
-        else if (cmd.cmd == "AX12Start")
+        else if (cmd.cmdEquals("AX12Start"))
         {
             println("AX12Start");
             StartAllServo();
         }
-        else if (cmd.cmd == "AX12Help")
-        {
-            PrintCommandHelp();
-        }
         else
         {
-            println("Unknown command : %s", cmd.cmd.c_str());
+            Printer::println("Not a AX12 command !");
+            return false;
         }
+        return true;
     }
 
-    const void PrintCommandHelp()
+    void PrintCommandHelp()
     {
         Printer::println("AX12 Command Help :");
         Printer::println(" > AX12Scan");
@@ -362,8 +360,8 @@ namespace ServoAX12
         Printer::println("      If no argument, print all currents positions");
         Printer::println(" > AX12Stop");
         Printer::println("      Stop all servos (torque off)");
-        Printer::println(" > AX12Help");
-        Printer::println("      Print this help");
+        Printer::println(" > AX12Start");
+        Printer::println("      Start all servos (torque on)");
         Printer::println();
     }
 

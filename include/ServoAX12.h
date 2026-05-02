@@ -105,8 +105,9 @@ namespace ServoAX12
 
     float GetServoPosition(Hardware_Config::ServoID id);
     
-    void HandleCommand(Command cmd);
-    const void PrintCommandHelp();
+    bool HandleCommand(Command cmd);
+    void PrintCommandHelp();
+    
     int16_t Scan();
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
     void PrintDxlInfo(Hardware_Config::ServoID id = Hardware_Config::ServoID::BroadCast);
