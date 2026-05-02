@@ -60,8 +60,16 @@ namespace ServoAX12
             {
                 if(!scanning)
                 {
-                    // take some time to update the servo
-                    ServoAX12::UpdateAllServo();
+                    for (auto &[id, servo] : Servos)
+                    {
+                        if (!servo.initialized)
+                        {
+                            println("Retrying init for Servo %s (ID %d)...", servo.name.c_str(), servo.id);
+                            InitServo(servo);
+                        }                            
+                        // Mettre à jour les servos, 1ms/servo
+                        UpdateServo(servo);
+                    }
                 }
             }
             catch (const std::exception &e)
@@ -83,38 +91,32 @@ namespace ServoAX12
         if (ServoExists(id))
             InitServo(Servos.at(id));
     }
-    
-    void InitAllServo()
-    {
-        for (auto &[id, servo] : Servos)
-        {
-            InitServo(servo);
-        }   
-    }
 
     void InitServo(ServoMotion &servo)
     {
+        if (servo.initialized || PowerMonitor::getBusVoltage_V() < 10.5f)
+        {
+            return;
+        }
+        // Ne pas réessayer trop souvent
+        uint32_t now = millis();
+        if ((now - servo.lastInitAttempt) < 3000)
+        {
+            return; // Attendre 3 secondes avant de réessayer
+        }
+        servo.lastInitAttempt = now;
+        
         print("Init Servo ID : %i name : %s", servo.id, servo.name.c_str());
         if (simulation)
         {
             servo.position = servo.command_position = (float)servo.positionMin;
-            println("Servo %s %d position: %f", servo.name, servo.id, servo.position);
+            servo.initialized = true;
+            servo.failureCount = 0;
+            println("Servo %s %d position: %f [SIM]", servo.name, servo.id, servo.position);
             return;
         }
-        int retry = 10;
-        bool pingOK = false;
-        while (!pingOK && retry>=0)
-        {
-            if(dxl.ping(servo.id))
-            {
-                pingOK = true;
-                break;
-            }
-            retry--;
-            print(".");
-            vTaskDelay(10);
-        }
-        if(pingOK)
+        
+        if(dxl.ping(servo.id))
         {
             ServoID id = static_cast<ServoID>(servo.id);
             PrintDxlInfo(id);
@@ -128,12 +130,16 @@ namespace ServoAX12
             dxl.torqueOn(servo.id);
 
             servo.position = servo.command_position = dxl.getPresentPosition(servo.id, UNIT_DEGREE);
+            servo.initialized = true;
+            servo.failureCount = 0;
             
             println(" position: %f", servo.position);
         }
         else
         {
-            println(" NOT connected !");
+            servo.initialized = false;
+            servo.failureCount++;
+            println(" NOT connected! (attempt %d)", servo.failureCount);
         }
     }
 
@@ -170,24 +176,34 @@ namespace ServoAX12
             dxl.torqueOn(servo.id);
     }
 
-    void UpdateAllServo()
-    {
-        // 1 ms / servo
-        for (auto &[id, servo] : Servos)
-        {
-            UpdateServo(servo);
-        }
-    }
-
     void UpdateServo(ServoMotion &servo)
     {
+        // Si le servo n'est pas initialisé, ne pas le forcer
+        if (!servo.initialized)
+        {
+            return;
+        }
+        
+        // Vérifier la tension avant de faire une opération I2C
+        float voltage_V = PowerMonitor::getBusVoltage_V();
+        if (voltage_V < 10.5f) // 10.5V seuil de fonctionnement des AX12
+        {
+            servo.IsMoving = false;
+            return;
+        }
+        
+        // On récupère la position actuelle du servo
         if (simulation)
         {
             servo.position = servo.position + (servo.command_position - servo.position) / 2;
         }
         else
+        {
             servo.position = dxl.getPresentPosition(servo.id, UNIT_DEGREE);
+        }
 
+        // On considère que le servo est en mouvement s'il est à plus ou moins de 5 degrés de la position commandée
+        // on allume la LED pour indiquer qu'une commande est en cours
         if (servo.position >= servo.command_position + 5
             || servo.position <= servo.command_position - 5)
         {
@@ -292,7 +308,23 @@ namespace ServoAX12
             //AX12AddServo:1:Left:0:300
             if (cmd.size == 3 && cmd.dataStr1 != "")
             {
-                ServoID id = static_cast<ServoID>(cmd.data[0]);
+                uint8_t rawId = (uint8_t)cmd.data[0];
+                if (rawId == 0 || rawId >= (uint8_t)ServoID::BroadCast)
+                {
+                    printError("AX12AddServo: ID invalide " + String(rawId) + " (doit être entre 1 et 253)");
+                    return true;
+                }
+                ServoID id = static_cast<ServoID>(rawId);
+                if (Servos.find(id) != Servos.end())
+                {
+                    printError("AX12AddServo: Le servo ID " + String(rawId) + " existe déjà");
+                    return true;
+                }
+                if (cmd.data[1] >= cmd.data[2])
+                {
+                    printError("AX12AddServo: positionMin (" + String(cmd.data[1]) + ") doit être < positionMax (" + String(cmd.data[2]) + ")");
+                    return true;
+                }
                 ServoPosition positionMin = static_cast<ServoPosition>(cmd.data[1]);
                 ServoPosition positionMax = static_cast<ServoPosition>(cmd.data[2]);
                 AddServo(id, cmd.dataStr1, positionMin, positionMax);

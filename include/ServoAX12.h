@@ -48,10 +48,12 @@ namespace ServoAX12
         float command_position = 0;
         bool IsMoving = false;
         bool ledState = false;
-
-        ServoMotion()
-        {
-        }
+        // Tracking d'état d'initialisation
+        bool initialized = false;           // Servo connecté et prêt
+        uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
+        int failureCount = 0;           // Compteur d'erreurs consécutives
+        
+        ServoMotion() = default;
 
         /**
          * @brief Construct a new Servo Motion object
@@ -83,7 +85,6 @@ namespace ServoAX12
     
     [[noreturn]] void TaskUpdateServo(void *pvParameters);
 
-    void InitAllServo();
     void InitServo(ServoMotion &servo);
     
     void AddServo(Hardware_Config::ServoID id, String name, Hardware_Config::ServoPosition positionMin, Hardware_Config::ServoPosition positionMax);
@@ -93,8 +94,7 @@ namespace ServoAX12
 
     void StartAllServo();
     void StartServo(ServoMotion &servo);
-
-    void UpdateAllServo();
+    
     void UpdateServo(ServoMotion &servo);
 
     bool AreAllServoMoving();
@@ -107,7 +107,7 @@ namespace ServoAX12
     
     bool HandleCommand(Command cmd);
     void PrintCommandHelp();
-    
+
     int16_t Scan();
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
     void PrintDxlInfo(Hardware_Config::ServoID id = Hardware_Config::ServoID::BroadCast);
