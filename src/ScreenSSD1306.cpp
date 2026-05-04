@@ -1,60 +1,224 @@
 #include "ScreenSSD1306.h"
+
 using namespace Printer;
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-// The pins for I2C are defined by the Wire-library.
-static const uint8_t I2C_SDA = SDA;
-static const uint8_t I2C_SCL = SCL;
-static const uint32_t clk = 400000UL;
-
-#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
 namespace Screen
 {
     namespace
     {
-        Adafruit_SSD1306 display(
-            SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, clk, clk);
-        // https://github.com/pkolt/bitmap_editor
-        // https://forum.arduino.cc/t/tuto-conversion-dune-image-bmp-ou-jpg-pour-affichage-sur-oled/1180079
-        // https://javl.github.io/image2cpp/
+        SSD1306AsciiWire display;
 
-        constexpr uint8_t pixelWidthFontSize = 6;
-        constexpr uint8_t pixelHeightFontSize = 8;
+        constexpr uint8_t kRows = 8;
+        constexpr uint8_t kCols = 21;
+        constexpr uint8_t kCharWidthPx = 6;
 
-        constexpr uint8_t fontSize = 1;
-
-        constexpr uint8_t line1 = pixelHeightFontSize * fontSize * 0;
-        constexpr uint8_t line2 = pixelHeightFontSize * fontSize * 1;
-        constexpr uint8_t line3 = pixelHeightFontSize * fontSize * 2;
-        constexpr uint8_t line4 = pixelHeightFontSize * fontSize * 3;
-        constexpr uint8_t line5 = pixelHeightFontSize * fontSize * 4;
-        constexpr uint8_t line6 = pixelHeightFontSize * fontSize * 5;
-        constexpr uint8_t line7 = pixelHeightFontSize * fontSize * 6;
-        constexpr uint8_t line8 = pixelHeightFontSize * fontSize * 7;
+        struct Element
+        {
+            uint8_t line;
+            uint8_t startCol;
+            String text;
+            String oldText;
+        };
 
         TaskThread taskUpdateScreen;
         Timeout blinkTimeOut;
+
+        Element elementMode{0, 0, "", ""};
+        Element elementBau{0, 9, "", ""};
+        Element elementState{0, 16, "", ""};
+
+        Element elementColor{1, 0, "", ""};
+        Element elementTime{1, 16, "", ""};
+
+        Element elementBlankLine2{2, 0, "                     ", ""};
+
+        Element elementPosX{3, 0, "X  200", ""};
+        Element elementAx12Title{3, 16, "AX12", ""};
+
+        Element elementPosY{4, 0, "Y 1500", ""};
+        Element elementServo1{4, 14, "1:100", ""};
+
+        Element elementPosA{5, 0, "A  180", ""};
+        Element elementServo2{5, 14, "2:200", ""};
+
+        Element elementBlankLine6{6, 0, "                     ", ""};
+
+        Element elementBattery{7, 0, "", ""};
+        Element elementWifi{7, 17, "", ""};
+
+        String ClipElementText(const Element &element)
+        {
+            if (element.startCol >= kCols)
+            {
+                return "";
+            }
+
+            const uint8_t maxLen = kCols - element.startCol;
+            String out = element.text;
+            if (out.length() > maxLen)
+            {
+                out = out.substring(0, maxLen);
+            }
+            return out;
+        }
+
+        void write_element(Element &element)
+        {
+            if (element.line >= kRows || element.startCol >= kCols)
+            {
+                return;
+            }
+
+            String newText = ClipElementText(element);
+            if (newText == element.oldText)
+            {
+                return;
+            }
+
+            display.setCursor(element.startCol * kCharWidthPx, element.line);
+            display.print(newText);
+
+            if (element.oldText.length() > newText.length())
+            {
+                for (size_t i = 0; i < element.oldText.length() - newText.length(); ++i)
+                {
+                    display.print(' ');
+                }
+            }
+
+            element.oldText = newText;
+        }
+
+        void ResetElements()
+        {
+            elementMode.oldText = "";
+            elementBau.oldText = "";
+            elementState.oldText = "";
+            elementColor.oldText = "";
+            elementTime.oldText = "";
+            elementBlankLine2.oldText = "";
+            elementPosX.oldText = "";
+            elementAx12Title.oldText = "";
+            elementPosY.oldText = "";
+            elementServo1.oldText = "";
+            elementPosA.oldText = "";
+            elementServo2.oldText = "";
+            elementBlankLine6.oldText = "";
+            elementBattery.oldText = "";
+            elementWifi.oldText = "";
+        }
+
+        String MatchStateToText(Match::State state)
+        {
+            switch (state)
+            {
+            case Match::State::MATCH_BOOT:
+                return "BOOT";
+            case Match::State::MATCH_WAIT:
+                return "WAIT";
+            case Match::State::MATCH_RUN:
+                return "RUN";
+            case Match::State::MATCH_STOP:
+                return "STOP";
+            case Match::State::MATCH_END:
+                return "END";
+            default:
+                return "?";
+            }
+        }
+
+        String TeamToText(IHM::Team team)
+        {
+            if (team == IHM::Team::Jaune)
+            {
+                return "JAUNE";
+            }
+            if (team == IHM::Team::Bleu)
+            {
+                return "BLEU";
+            }
+            return "COLOR?";
+        }
+
+        String FormatMatchTime()
+        {
+            int time = Match::getMatchTimeSec();
+            int min = time / 60;
+            int sec = time % 60;
+            return String(min) + ":" + (sec < 10 ? "0" : "") + String(sec);
+        }
+
+        String FormatTimeSec()
+        {
+            int timeSec = Match::getMatchTimeSec();
+            if (timeSec < 0)
+            {
+                timeSec = 0;
+            }
+            if (timeSec > 999)
+            {
+                timeSec = 999;
+            }
+
+            String out = String(timeSec);
+            while (out.length() < 3)
+            {
+                out = " " + out;
+            }
+            return out + " s";
+        }
+
+        String WifiToText4()
+        {
+            if (!Wifi_Helper::IsEnable())
+            {
+                return "WF-X";
+            }
+            else
+            {
+                if (Wifi_Helper::IsClientConnected())
+                {
+                    return "WIFI";
+                }
+                else if (Wifi_Helper::IsWifiConnected())
+                {
+                    return "WI-!";
+                }
+                else
+                {
+                    return "WF-?";
+                }
+            }
+        }
+
+        bool blinkState = false;
+        String BAUToText3()
+        {
+            if (IHM::bauReady == 1)
+            {
+                return "   ";
+            }
+            else
+            {
+                if(blinkTimeOut.IsTimeOut())
+                {
+                    blinkState = !blinkState;
+                }
+                return blinkState ? "BAU" : "   ";
+            }
+        }
     } // namespace
 
-    // Initialize the OLED display.
     void Initialisation(void)
     {
-        // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-        if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-        {
-            printError("SSD1306 allocation failed");
-        }
-        else
-        {
-            println("SSD1306 init OK");
-        }
-        // Clear the buffer
-        display.clearDisplay();
+        display.begin(&Adafruit128x64, SCREEN_ADDRESS);
+        println("SSD1306 init OK");
+
+        display.setFont(System5x7);
+        display.clear();
+        ResetElements();
 
         Screen::Logo();
         delay(500);
@@ -63,70 +227,37 @@ namespace Screen
         taskUpdateScreen = TaskThread(TaskUpdateScreen, "TaskUpdateScreen", 10000, 15, 0);
     }
 
-    // Clear contents of display buffer (set all pixels to off).
     void ClearDisplay()
     {
-        display.clearDisplay();
+        display.clear();
+        ResetElements();
     }
 
-    // Push data currently in RAM to SSD1306 display.
     void Display()
     {
-        display.display();
+        // SSD1306Ascii écrit directement sur l'écran via I2C.
     }
 
-    // If true, switch to invert mode (black-on-white), else normal mode (white-on-black).
-    void InvertColor(bool invert)
+    void Text(const String &text, uint8_t row, uint8_t col)
     {
-        display.invertDisplay(invert);
-    }
-
-    void Text(const String &text, int size, int cursorX, int cursorY, int color)
-    {
-        // for size 1, max number of letter for the screen width is 21 (128 / 6)
-        // for size 1, max line for the screen height is 8 (64 / 8)
-        //
-        // for size 2, max number of letter for the screen width is 10 (128 / 12)
-        // for size 2, max line for the screen height is 4 (64 / 16)
-        //
-        // for size 3, max number of letter for the screen width is 7 (128 / 18)
-        // for size 3, max line for the screen height is 3 (64 / 24)
-        //
-        // for size 4, max number of letter for the screen width is 5 (128 / 24)
-        // for size 4, max line for the screen height is 2 (64 / 32)
-
-        display.setTextSize(size);
-        display.setTextColor(color);
-        if (cursorX < 0 || cursorX > display.width())
+        if (col >= kCols || row >= kRows)
         {
-            cursorX = 0;
+            return;
         }
-        if (cursorY < 0 || cursorY > display.height())
-        {
-            cursorY = 0;
-        }
-        display.setCursor(cursorX, cursorY);
+
+        display.setCursor(col * kCharWidthPx, row);
         display.print(text);
     }
 
-    // Display the logo in the center of the screen.
     void Logo(void)
     {
-        // display.clearDisplay();
-        display.drawBitmap((display.width() - mecapi_bmp_width) / 2,
-                           (display.height() - mecapi_bmp_height) / 2,
-                           mecapi_bmp,
-                           mecapi_bmp_width,
-                           mecapi_bmp_height,
-                           1);
-        display.display();
+        Element logo{2, 0, "     PAMI READY", ""};
+        write_element(logo);
     }
-
-    bool colorBAU = 0;
-    bool colorWifi = 0;
 
     void TaskUpdateScreen(void *pvParameters)
     {
+        (void)pvParameters;
         println("Start Task Update Screen");
         Chrono chrono("Screen", 100);
         while (true)
@@ -134,173 +265,36 @@ namespace Screen
             chrono.Start();
             try
             {
-                display.clearDisplay();
-                String text = "";
-
-                // -----------------------------------
-                // Top Left
-                if (IHM::switchMode == 0)
-                    Text("TEST", fontSize, 0, line1);
-                else if (IHM::switchMode == 1)
-                    Text("MATCH", fontSize, 0, line1);
-                else
-                    Text("MODE ?", fontSize, 0, line1);
-
-                if (IHM::team == IHM::Team::Jaune)
-                    Text("JAUNE", fontSize, 0, line2);
-                else if (IHM::team == IHM::Team::Bleu)
-                    Text("BLEU", fontSize, 0, line2);
-                else
-                    Text("COLOR ?", fontSize, 0, line2);
-
-                // Top Center
-                text = "BAU";
-                Text(text,
-                     2,
-                     SCREEN_WIDTH / 2 - pixelWidthFontSize * 2 * text.length() / 2,
-                     0,
-                     (colorBAU ? 1 : 0));
-                if (IHM::bauReady == 0 && blinkTimeOut.IsTimeOut())
-                    colorBAU = !colorBAU;
-                else if (IHM::bauReady == 1)
-                    colorBAU = 0;
-
-                // Top Right
-                switch (Match::matchState)
-                {
-                case Match::State::MATCH_BOOT:
-                    text = "BOOT";
-                    break;
-                case Match::State::MATCH_WAIT:
-                    text = "WAIT";
-                    break;
-                case Match::State::MATCH_RUN:
-                    text = "RUN";
-                    break;
-                case Match::State::MATCH_STOP:
-                    text = "STOP";
-                    break;
-                case Match::State::MATCH_END:
-                    text = "END";
-                    break;
-                default:
-                    break;
-                }
-                Text(text,
-                     fontSize,
-                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
-                     line1);
-
-                int time = Match::getMatchTimeSec();
-                int min = time / 60;
-                int sec = time % 60;
-                text = String(min) + ":" + (sec < 10 ? "0" : "") + String(sec);
-                Text(text,
-                     fontSize,
-                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
-                     line2);
-
-                // -----------------------------------
-                // Mid Left
-                Text("X  200", 1, 0, line4);
-                Text("Y 1500", 1, 0, line5);
-                Text("A  180", 1, 0, line6);
-
-                // -----------------------------------
-                // Mid Right
-                Text("AX12", fontSize, SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(), line4);
-                text = "1: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 0);
-                Text(text,
-                     fontSize,
-                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
-                     line5);
-                text = "2: " + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 0);
-                Text(text,
-                     fontSize,
-                     SCREEN_WIDTH - pixelWidthFontSize * fontSize * text.length(),
-                     line6);
-                
-                // -----------------------------------
-                // Bottom
                 float voltage_V = PowerMonitor::getBusVoltage_V();
                 float current_mA = PowerMonitor::getCurrent_mA();
-                float battPercent = (voltage_V - PowerMonitor::minVoltage_V) / (PowerMonitor::maxVoltage_V - PowerMonitor::minVoltage_V) * 100;
+                elementMode.text = (IHM::switchMode == 0) ? "TEST" : ((IHM::switchMode == 1) ? "MATCH" : "MODE");
+                elementBau.text = BAUToText3();
+                elementState.text = MatchStateToText(Match::matchState);
 
-                if (battPercent > 80)
-                    display.drawBitmap(0,
-                                       line8,
-                                       battery_4_bmp,
-                                       battery_bmp_width,
-                                       battery_bmp_height,
-                                       1);
-                else if (battPercent > 60)
-                    display.drawBitmap(0,
-                                       line8,
-                                       battery_3_bmp,
-                                       battery_bmp_width,
-                                       battery_bmp_height,
-                                       1);
-                else if (battPercent > 40)
-                    display.drawBitmap(0,
-                                       line8,
-                                       battery_2_bmp,
-                                       battery_bmp_width,
-                                       battery_bmp_height,
-                                       1);
-                else if (battPercent > 20)
-                    display.drawBitmap(0,
-                                       line8,
-                                       battery_1_bmp,
-                                       battery_bmp_width,
-                                       battery_bmp_height,
-                                       1);
-                else
-                    display.drawBitmap(0,
-                                       line8,
-                                       battery_0_bmp,
-                                       battery_bmp_width,
-                                       battery_bmp_height,
-                                       1);
+                elementColor.text = TeamToText(IHM::team);
+                elementTime.text = FormatTimeSec();
 
-                text = " " + String(voltage_V, 2) + "V " + String(current_mA, 0) + "mA";
-                Text(text,
-                     fontSize,
-                     battery_bmp_width,
-                     SCREEN_HEIGHT - pixelHeightFontSize * fontSize);
+                elementBattery.text = String("BAT ") + String(voltage_V, 2) + "V " + String(current_mA, 0) + "mA";
+                elementWifi.text = WifiToText4();
                 
-                colorWifi = 1;
-                if (Wifi_Helper::IsEnable())
-                {
-                    if (Wifi_Helper::IsClientConnected())
-                    {
-                        display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
-                                       line8,
-                                       wifi_ok_bmp,
-                                       wifi_bmp_width,
-                                       wifi_bmp_height,
-                                       (colorWifi ? 1 : 0));
-                    }
-                    else if (Wifi_Helper::IsWifiConnected())
-                    {
-                        display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
-                                       line8,
-                                       wifi_on_bmp,
-                                       wifi_bmp_width,
-                                       wifi_bmp_height,
-                                       (colorWifi ? 1 : 0));
-                    }
-                    else
-                    {
-                        display.drawBitmap(SCREEN_WIDTH - wifi_bmp_width,
-                                        line8,
-                                        wifi_off_bmp,
-                                        wifi_bmp_width,
-                                        wifi_bmp_height,
-                                        (colorWifi ? 1 : 0));
-                    }
-                }
+                elementServo1.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::VL53)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 1);
+                elementServo2.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::Bras)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 1);
 
-                display.display();
+                write_element(elementMode);
+                write_element(elementBau);
+                write_element(elementState);
+                write_element(elementColor);
+                write_element(elementTime);
+                write_element(elementBlankLine2);
+                write_element(elementPosX);
+                write_element(elementAx12Title);
+                write_element(elementPosY);
+                write_element(elementServo1);
+                write_element(elementPosA);
+                write_element(elementServo2);
+                write_element(elementBlankLine6);
+                write_element(elementBattery);
+                write_element(elementWifi);
             }
             catch (const std::exception &e)
             {
@@ -310,7 +304,7 @@ namespace Screen
             {
                 printChrono(chrono);
             }
-            vTaskDelay(100);
+            vTaskDelay(200);
         }
         println("Screen Update Task STOPPED !");
     }
