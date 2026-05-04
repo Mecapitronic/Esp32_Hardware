@@ -62,10 +62,13 @@ namespace ServoAX12
                 {
                     for (auto &[id, servo] : Servos)
                     {
-                        if (!servo.initialized)
+                        // Ne pas réessayer trop souvent
+                        uint32_t now = millis();
+                        if (!servo.initialized && (now - servo.lastInitAttempt) > 3000)
                         {
                             println("Retrying init for Servo %s (ID %d)...", servo.name.c_str(), servo.id);
                             InitServo(servo);
+                            servo.lastInitAttempt = now;
                         }                            
                         // Mettre à jour les servos, 1ms/servo
                         UpdateServo(servo);
@@ -98,13 +101,6 @@ namespace ServoAX12
         {
             return;
         }
-        // Ne pas réessayer trop souvent
-        uint32_t now = millis();
-        if ((now - servo.lastInitAttempt) < 3000)
-        {
-            return; // Attendre 3 secondes avant de réessayer
-        }
-        servo.lastInitAttempt = now;
         
         print("Init Servo ID : %i name : %s", servo.id, servo.name.c_str());
         if (simulation)
