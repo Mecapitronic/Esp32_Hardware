@@ -12,6 +12,7 @@ namespace PowerMonitor
     constexpr float minVoltage_V = 11.0;  // Minimum voltage of the battery
 
     void Initialisation(void);
+    void UpdateMeasurements(void);
 
     float getBusVoltage_V();
     float getShuntVoltage_mV();
