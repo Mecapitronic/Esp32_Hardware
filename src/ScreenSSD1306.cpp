@@ -2,6 +2,8 @@
 
 using namespace Printer;
 
+extern int numPami;
+
 #define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
 namespace Screen
@@ -27,6 +29,7 @@ namespace Screen
 
         Element elementMode{0, 0, "", ""};
         Element elementBau{0, 9, "", ""};
+        Element elementPami{0, 14, "", ""};
         Element elementState{0, 16, "", ""};
 
         Element elementColor{1, 0, "", ""};
@@ -97,6 +100,7 @@ namespace Screen
             elementBau.oldText = "";
             elementState.oldText = "";
             elementColor.oldText = "";
+            elementPami.oldText = "";
             elementTime.oldText = "";
             elementBlankLine2.oldText = "";
             elementPosX.oldText = "";
@@ -272,6 +276,7 @@ namespace Screen
                 elementState.text = MatchStateToText(Match::matchState);
 
                 elementColor.text = TeamToText(IHM::team);
+                elementPami.text = numPami >= 0 ? String(numPami) : "?";
                 elementTime.text = FormatTimeSec();
 
                 elementBattery.text = String("BAT ") + String(voltage_V, 2) + "V " + String(current_mA, 0) + "mA";
@@ -284,6 +289,7 @@ namespace Screen
                 write_element(elementBau);
                 write_element(elementState);
                 write_element(elementColor);
+                write_element(elementPami);
                 write_element(elementTime);
                 write_element(elementBlankLine2);
                 write_element(elementPosX);
