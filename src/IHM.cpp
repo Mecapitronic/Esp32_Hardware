@@ -17,13 +17,14 @@ namespace IHM
         Timeout ledTimeOut;
 
         TaskThread taskUpdateIHM;
-        CLEDController* builtInLEDController = nullptr;
+        CLEDController *builtInLEDController = nullptr;
         CRGB builtin_led;
         constexpr int stripLEDCount = 10;
-        CLEDController* stripLEDController = nullptr;
+        constexpr uint8_t teamLedIndex = 0;
+        constexpr uint8_t modeLedIndex = stripLEDCount - 1;
+        CLEDController *stripLEDController = nullptr;
         CRGB strip_led[stripLEDCount];
     } // namespace
-
 
     void Initialisation()
     {
@@ -54,7 +55,7 @@ namespace IHM
         }
 
         builtInLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
-        builtin_led = CRGB::Black;
+        builtin_led = CRGB::Purple;
         if (builtInLEDController)
         {
             builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
@@ -67,7 +68,7 @@ namespace IHM
         }
 
         taskUpdateIHM = TaskThread(TaskUpdateIHM, "TaskUpdateIHM", 10000, 15, 0);
-        
+
         println("Vérifier que le BAU est retiré pour démarrer le robot");
         while (bauReady != 1)
         {
@@ -148,12 +149,12 @@ namespace IHM
         if (!bauReady)
         {
             builtin_led = CRGB::Red;
-            fill_solid(strip_led, stripLEDCount, builtin_led);
+            fill_solid(strip_led, stripLEDCount, CRGB::Red);
         }
         else
         {
             builtin_led = teamColor;
-            fill_solid(strip_led, stripLEDCount, builtin_led);
+            fill_solid(strip_led, stripLEDCount, CRGB::Black);
         }
 
         if (useBlink)
@@ -166,18 +167,26 @@ namespace IHM
             if (ledState)
             {
                 builtin_led = teamColor;
-                fill_solid(strip_led, stripLEDCount, builtin_led);
             }
             else
             {
                 builtin_led = bauReady ? CRGB::Black : CRGB::Red;
-                fill_solid(strip_led, stripLEDCount, builtin_led);
             }
         }
-        if (!builtInLEDController) return;
-        builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
-        if (!stripLEDController) return;
-        stripLEDController->showLeds(BUILTIN_BRIGHTNESS);
+        renderStatusIndicators();
+        if (builtInLEDController != nullptr)
+            builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
+        if (stripLEDController != nullptr)
+            stripLEDController->showLeds(BUILTIN_BRIGHTNESS);
+    }
+
+    void renderStatusIndicators()
+    {
+        const CRGB teamColor = (IHM::team == IHM::Team::Jaune) ? CRGB::Gold : ((IHM::team == IHM::Team::Bleu) ? CRGB::DodgerBlue : CRGB::White);
+        const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::LimeGreen : ((IHM::switchMode == 0) ? CRGB::DarkOrange : CRGB::White);
+
+        strip_led[teamLedIndex] = teamColor;
+        strip_led[modeLedIndex] = modeColor;
     }
 
     void PrintAll()

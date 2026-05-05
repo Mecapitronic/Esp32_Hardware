@@ -36,6 +36,7 @@ namespace IHM
     void TaskUpdateIHM(void *pvParameters);
 
     void Blink();
+    void renderStatusIndicators();
 
     void PrintAll();
     void PrintTeam();
