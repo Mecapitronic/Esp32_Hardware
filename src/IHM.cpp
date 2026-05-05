@@ -17,7 +17,7 @@ namespace IHM
         Timeout ledTimeOut;
 
         TaskThread taskUpdateIHM;
-        CLEDController* LEDcontroller = nullptr;
+        CLEDController* builtInLEDController = nullptr;
         CRGB builtin_led;
     } // namespace
 
@@ -50,9 +50,12 @@ namespace IHM
             ledTimeOut.timeOut = 500;
         }
 
-        LEDcontroller = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
+        builtInLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
         builtin_led = CRGB::Black;
-        LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
+        if (builtInLEDController)
+        {
+            builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
+        }
 
         taskUpdateIHM = TaskThread(TaskUpdateIHM, "TaskUpdateIHM", 10000, 15, 0);
         
@@ -122,7 +125,7 @@ namespace IHM
 
     void Blink()
     {
-        CRGB teamColor;
+        CRGB teamColor = CRGB::Black;
         if (team == Team::Jaune)
         {
             teamColor = CRGB::Gold;
@@ -156,8 +159,8 @@ namespace IHM
                 builtin_led = bauReady ? CRGB::Black : CRGB::Red;
             }
         }
-        if (!LEDcontroller) return;  // Vérification simple
-        LEDcontroller->showLeds(BUILTIN_BRIGHTNESS);
+        if (!builtInLEDController) return;
+        builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
     }
 
     void PrintAll()
