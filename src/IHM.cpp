@@ -19,6 +19,9 @@ namespace IHM
         TaskThread taskUpdateIHM;
         CLEDController* builtInLEDController = nullptr;
         CRGB builtin_led;
+        constexpr int stripLEDCount = 10;
+        CLEDController* stripLEDController = nullptr;
+        CRGB strip_led[stripLEDCount];
     } // namespace
 
 
@@ -55,6 +58,12 @@ namespace IHM
         if (builtInLEDController)
         {
             builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
+        }
+        stripLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_WS2812_LED, RGB>(strip_led, stripLEDCount);
+        fill_solid(strip_led, stripLEDCount, CRGB::Purple);
+        if (stripLEDController)
+        {
+            stripLEDController->showLeds(BUILTIN_BRIGHTNESS);
         }
 
         taskUpdateIHM = TaskThread(TaskUpdateIHM, "TaskUpdateIHM", 10000, 15, 0);
@@ -139,10 +148,12 @@ namespace IHM
         if (!bauReady)
         {
             builtin_led = CRGB::Red;
+            fill_solid(strip_led, stripLEDCount, builtin_led);
         }
         else
         {
             builtin_led = teamColor;
+            fill_solid(strip_led, stripLEDCount, builtin_led);
         }
 
         if (useBlink)
@@ -153,14 +164,20 @@ namespace IHM
             }
 
             if (ledState)
+            {
                 builtin_led = teamColor;
+                fill_solid(strip_led, stripLEDCount, builtin_led);
+            }
             else
             {
                 builtin_led = bauReady ? CRGB::Black : CRGB::Red;
+                fill_solid(strip_led, stripLEDCount, builtin_led);
             }
         }
         if (!builtInLEDController) return;
         builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
+        if (!stripLEDController) return;
+        stripLEDController->showLeds(BUILTIN_BRIGHTNESS);
     }
 
     void PrintAll()
