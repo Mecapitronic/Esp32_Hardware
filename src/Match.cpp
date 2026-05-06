@@ -18,8 +18,7 @@ namespace Match
     void Initialisation()
     {
         // Start the match timer task
-        TaskThread taskUpdateMatch =
-            TaskThread(TaskUpdateMatch, "TaskUpdateMatch", 10000, 15, 0);
+        taskUpdateMatch = TaskThread(TaskUpdateMatch, "TaskUpdateMatch", 10000, 15, 0);
     }
 
     void startMatchTimer()

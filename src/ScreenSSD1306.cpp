@@ -2,8 +2,6 @@
 
 using namespace Printer;
 
-extern int numPami;
-
 #define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
 namespace Screen
@@ -114,9 +112,9 @@ namespace Screen
             elementWifi.oldText = "";
         }
 
-        String MatchStateToText(Match::State state)
+        String MatchStateToText()
         {
-            switch (state)
+            switch (Match::matchState)
             {
             case Match::State::MATCH_BOOT:
                 return "BOOT";
@@ -133,17 +131,30 @@ namespace Screen
             }
         }
 
-        String TeamToText(IHM::Team team)
+        String TeamToText()
         {
-            if (team == IHM::Team::Jaune)
+            if (IHM::team == IHM::Team::Jaune)
             {
                 return "JAUNE";
             }
-            if (team == IHM::Team::Bleu)
+            if (IHM::team == IHM::Team::Bleu)
             {
                 return "BLEU";
             }
             return "COLOR?";
+        }
+
+        String ModeToText()
+        {
+            if (IHM::switchMode == 0)
+            {
+                return "TEST";
+            }
+            if (IHM::switchMode == 1)
+            {
+                return "MATCH";
+            }
+            return "MODE";
         }
 
         String FormatMatchTime()
@@ -174,7 +185,7 @@ namespace Screen
             return out + " s";
         }
 
-        String WifiToText4()
+        String WifiToText()
         {
             if (!Wifi_Helper::IsEnable())
             {
@@ -197,8 +208,13 @@ namespace Screen
             }
         }
 
+        String BatteryToText()
+        {
+            return (Power::isPowerON() ? "ON  " : "OFF ") + String(Power::getBusVoltage_V(), 2) + "V " + String(Power::getCurrent_mA(), 0) + "mA";
+        }
+
         bool blinkState = false;
-        String BAUToText3()
+        String BAUToText()
         {
             if (IHM::bauReady == 1)
             {
@@ -237,11 +253,6 @@ namespace Screen
         ResetElements();
     }
 
-    void Display()
-    {
-        // SSD1306Ascii écrit directement sur l'écran via I2C.
-    }
-
     void Text(const String &text, uint8_t row, uint8_t col)
     {
         if (col >= kCols || row >= kRows)
@@ -269,36 +280,40 @@ namespace Screen
             chrono.Start();
             try
             {
-                float voltage_V = Power::getBusVoltage_V();
-                float current_mA = Power::getCurrent_mA();
-                elementMode.text = (IHM::switchMode == 0) ? "TEST" : ((IHM::switchMode == 1) ? "MATCH" : "MODE");
-                elementBau.text = BAUToText3();
-                elementState.text = MatchStateToText(Match::matchState);
-
-                elementColor.text = TeamToText(IHM::team);
-                elementPami.text = numPami >= 0 ? String(numPami) : "?";
+                elementMode.text = ModeToText();
+                elementBau.text = BAUToText();
+                elementState.text = MatchStateToText();
+                elementColor.text = TeamToText();
+                //elementPami.text = numPami >= 0 ? String(numPami) : "?";
                 elementTime.text = FormatTimeSec();
 
-                elementBattery.text = (Power::isPowerON() ? "ON  " : "OFF ") + String(voltage_V, 2) + "V " + String(current_mA, 0) + "mA";
-                elementWifi.text = WifiToText4();
+                elementBattery.text = BatteryToText();
+                elementWifi.text = WifiToText();
                 
-                elementServo1.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::VL53)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 1);
-                elementServo2.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::Bras)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 1);
+                //elementServo1.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::VL53)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 1);
+                //elementServo2.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::Bras)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 1);
 
                 write_element(elementMode);
                 write_element(elementBau);
-                write_element(elementState);
-                write_element(elementColor);
                 write_element(elementPami);
+                write_element(elementState);
+
+                write_element(elementColor);
                 write_element(elementTime);
+
                 write_element(elementBlankLine2);
+
                 write_element(elementPosX);
                 write_element(elementAx12Title);
+
                 write_element(elementPosY);
                 write_element(elementServo1);
+
                 write_element(elementPosA);
                 write_element(elementServo2);
+
                 write_element(elementBlankLine6);
+                
                 write_element(elementBattery);
                 write_element(elementWifi);
             }

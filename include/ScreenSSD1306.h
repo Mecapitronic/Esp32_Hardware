@@ -18,14 +18,13 @@ ___|_____________________
  4 |Y 1500        1:123.4
  5 |A  180        2:123.4
  6 | 
- 7 |BAT 12.30V 12mA  WIFI
+ 7 |ON  12.30V 12mA  WIFI
 */
 
 namespace Screen
 {
     void Initialisation(void);
     void ClearDisplay(void);
-    void Display(void);
     void Text(const String &text, uint8_t row = 0, uint8_t col = 0);
     void Logo(void);
     void TaskUpdateScreen(void *pvParameters);

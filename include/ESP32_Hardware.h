@@ -22,4 +22,12 @@
 #include "Power.h"
 #include "ToF_VL53L8CX.h"
 
+namespace Hardware
+{
+	/**
+	 * Initialize all hardware modules and start their internal tasks.
+	 */
+	void Initialisation();
+}
+
 #endif
