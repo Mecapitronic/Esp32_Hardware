@@ -19,7 +19,7 @@
 #include "Match.h"
 #include "ScreenSSD1306.h"
 #include "ServoAX12.h"
-#include "PowerMonitor.h"
+#include "Power.h"
 #include "ToF_VL53L8CX.h"
 
 #endif

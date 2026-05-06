@@ -1,8 +1,8 @@
-#include "PowerMonitor.h"
+#include "Power.h"
 using namespace Printer;
 using namespace Hardware_Config;
 
-namespace PowerMonitor
+namespace Power
 {
     namespace
     {
@@ -13,6 +13,9 @@ namespace PowerMonitor
         float current_mA = 0.0f;
         float power_mW = 0.0f;
         bool initDone = false;
+
+        bool lowVoltage = false;
+        bool powerEnable = false;
         
         // Simulated values for SIMULATOR mode
         float simulatedBusVoltage_V = 12.0f;
@@ -23,6 +26,7 @@ namespace PowerMonitor
 
     void Initialisation(void)
     {
+        pinMode(Hardware_Config::PIN_EN_MCU, OUTPUT);
         if (simulation)
         {
             println("INA219 init OK (SIMULATED)");
@@ -71,35 +75,58 @@ namespace PowerMonitor
             shuntVoltage_mV = ina219.getShuntVoltage_mV();
             current_mA = ina219.getCurrent_mA();
             power_mW = ina219.getPower_mW();
+
+            if(busVoltage_V < minVoltage_V)
+                lowVoltage = true;
+            else
+                lowVoltage = false;
+            UpdatePower();
         }
+    }
+
+    void DisablePower()
+    { 
+        powerEnable = false;
+        UpdatePower();
+    }
+
+    void EnablePower()
+    {
+        powerEnable = true;
+        UpdatePower();
+    }
+
+    void UpdatePower()
+    {
+        digitalWrite(Hardware_Config::PIN_EN_MCU, isPowerON());
+    }
+
+    bool isPowerON()
+    {
+        if(powerEnable && !lowVoltage)
+            return true;
+        else
+            return false;
     }
 
     float getBusVoltage_V()
     {
-        if (!initDone)
-            UpdateMeasurements();
         return busVoltage_V;
     }
 
     float getShuntVoltage_mV()
     {
-        if (!initDone)
-            UpdateMeasurements();
         return shuntVoltage_mV;
     }
 
     float getCurrent_mA()
     {
-        if (!initDone)
-            UpdateMeasurements();
         return current_mA;
     }
 
     float getPower_mW()
     {
-        if (!initDone)
-            UpdateMeasurements();
         return power_mW;
     }
 
-} // namespace PowerMonitor
+} // namespace Power

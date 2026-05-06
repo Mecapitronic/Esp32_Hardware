@@ -102,6 +102,8 @@ namespace Match
                         Wifi_Helper::SetLocalIP("192.168.137."
                                                 + String(100 + numPami + 1));
                     }*/
+                   
+                    Power::EnablePower();
 
                     if (IHM::tirettePresent == 0)
                     {
@@ -114,6 +116,7 @@ namespace Match
                 // Match en cours
                 if (Match::matchState == State::MATCH_RUN)
                 {
+                    Power::EnablePower();
                     //println("Start of Match !");
                     /*
                     int lastMatchTime = 0;
@@ -154,7 +157,7 @@ namespace Match
                 if (Match::matchState == State::MATCH_END)
                 {
                     // Disable Motor & Servo Power
-                    digitalWrite(Hardware_Config::PIN_EN_MCU, LOW);
+                    Power::DisablePower();
                     IHM::useBlink = false;
                     //ServoAX12::StopAllServo();
                 }

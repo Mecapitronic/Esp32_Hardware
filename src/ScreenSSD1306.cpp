@@ -269,8 +269,8 @@ namespace Screen
             chrono.Start();
             try
             {
-                float voltage_V = PowerMonitor::getBusVoltage_V();
-                float current_mA = PowerMonitor::getCurrent_mA();
+                float voltage_V = Power::getBusVoltage_V();
+                float current_mA = Power::getCurrent_mA();
                 elementMode.text = (IHM::switchMode == 0) ? "TEST" : ((IHM::switchMode == 1) ? "MATCH" : "MODE");
                 elementBau.text = BAUToText3();
                 elementState.text = MatchStateToText(Match::matchState);
@@ -279,7 +279,7 @@ namespace Screen
                 elementPami.text = numPami >= 0 ? String(numPami) : "?";
                 elementTime.text = FormatTimeSec();
 
-                elementBattery.text = String("BAT ") + String(voltage_V, 2) + "V " + String(current_mA, 0) + "mA";
+                elementBattery.text = (Power::isPowerON() ? "ON  " : "OFF ") + String(voltage_V, 2) + "V " + String(current_mA, 0) + "mA";
                 elementWifi.text = WifiToText4();
                 
                 elementServo1.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::VL53)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 1);

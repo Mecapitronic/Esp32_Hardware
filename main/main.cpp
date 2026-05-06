@@ -7,7 +7,7 @@ void setup(void)
     ESP32_Helper::Initialisation();
     println("ESP32 Hardware Lib");
     Wire.begin(SDA, SCL, 400000UL);
-    PowerMonitor::Initialisation();
+    Power::Initialisation();
     Screen::Initialisation();
     IHM::Initialisation();
     Match::Initialisation();
@@ -23,10 +23,10 @@ void setup(void)
 void loop(void)
 {
     /*
-        println("Bus Voltage:   %f V",PowerMonitor::getBusVoltage_V());
-        println("Shunt Voltage: %f mV",PowerMonitor::getShuntVoltage_mV());
-        println("Current:       %f mA",PowerMonitor::getCurrent_mA());
-        println("Power:         %f mW",PowerMonitor::getPower_mW());
+        println("Bus Voltage:   %f V",Power::getBusVoltage_V());
+        println("Shunt Voltage: %f mV",Power::getShuntVoltage_mV());
+        println("Current:       %f mA",Power::getCurrent_mA());
+        println("Power:         %f mW",Power::getPower_mW());
         println("");
     */
     /*

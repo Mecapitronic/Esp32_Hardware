@@ -118,7 +118,7 @@ namespace IHM
                     PrintBAU();
                 }
                 Blink();
-                PowerMonitor::UpdateMeasurements();
+                Power::UpdateMeasurements();
             }
             catch (const std::exception &e)
             {

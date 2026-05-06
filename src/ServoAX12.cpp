@@ -97,7 +97,7 @@ namespace ServoAX12
 
     void InitServo(ServoMotion &servo)
     {
-        if (servo.initialized || PowerMonitor::getBusVoltage_V() < 10.5f)
+        if (servo.initialized || !Power::isPowerON())
         {
             return;
         }
@@ -181,8 +181,7 @@ namespace ServoAX12
         }
         
         // Vérifier la tension avant de faire une opération I2C
-        float voltage_V = PowerMonitor::getBusVoltage_V();
-        if (voltage_V < 10.5f) // 10.5V seuil de fonctionnement des AX12
+        if (!Power::isPowerON()) // 10.5V seuil de fonctionnement des AX12
         {
             servo.IsMoving = false;
             return;
