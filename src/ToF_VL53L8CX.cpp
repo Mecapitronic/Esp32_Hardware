@@ -109,13 +109,13 @@ namespace ToF_VL53L8CX
             for (int i = 0; i < 64; i++)
             {
                 sensorData.distance_mm[i] = 500; // 500mm default distance
-                sensorData.ambient_per_spad[i] = 100;
+                //sensorData.ambient_per_spad[i] = 100;
                 sensorData.nb_target_detected[i] = 1;
-                sensorData.nb_spads_enabled[i] = 16;
-                sensorData.signal_per_spad[i] = 1000;
-                sensorData.range_sigma_mm[i] = 100;
+                //sensorData.nb_spads_enabled[i] = 16;
+                //sensorData.signal_per_spad[i] = 1000;
+                //sensorData.range_sigma_mm[i] = 100;
                 sensorData.target_status[i] = 0;
-                sensorData.reflectance[i] = 50;
+                //sensorData.reflectance[i] = 50;
             }
             errorStatus = 0;
         }
@@ -192,20 +192,20 @@ namespace ToF_VL53L8CX
 
     void printProcessing()
     {
-        Serial.print("VL53amb");
-        sendUint32Array(sensorData.ambient_per_spad, 64);
+        //Serial.print("VL53amb");
+        //sendUint32Array(sensorData.ambient_per_spad, 64);
 
         Serial.print("VL53tar");
         Serial.write(sensorData.nb_target_detected, 64);
 
-        Serial.print("VL53spa");
-        sendUint32Array(sensorData.nb_spads_enabled, 64);
+        //Serial.print("VL53spa");
+        //sendUint32Array(sensorData.nb_spads_enabled, 64);
 
-        Serial.print("VL53sps");
-        sendUint32Array(sensorData.signal_per_spad, 64);
+        //Serial.print("VL53sps");
+        //sendUint32Array(sensorData.signal_per_spad, 64);
 
-        Serial.print("VL53sig");
-        sendUint16Array(sensorData.range_sigma_mm, 64);
+        //Serial.print("VL53sig");
+        //sendUint16Array(sensorData.range_sigma_mm, 64);
 
         Serial.print("VL53dis");
         sendInt16Array(sensorData.distance_mm, 64);
@@ -213,8 +213,8 @@ namespace ToF_VL53L8CX
         Serial.print("VL53sta");
         Serial.write(sensorData.target_status, 64);
 
-        Serial.print("VL53ref");
-        Serial.write(sensorData.reflectance, 64);
+        //Serial.print("VL53ref");
+        //Serial.write(sensorData.reflectance, 64);
     }
 
     void printFormattedOutput()

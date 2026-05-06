@@ -70,14 +70,48 @@
  * I2C access.
  */
 
-//  #define VL53L8CX_DISABLE_AMBIENT_PER_SPAD
-//  #define VL53L8CX_DISABLE_NB_SPADS_ENABLED
+  #define VL53L8CX_DISABLE_AMBIENT_PER_SPAD
+  #define VL53L8CX_DISABLE_NB_SPADS_ENABLED
 //  #define VL53L8CX_DISABLE_NB_TARGET_DETECTED
-//  #define VL53L8CX_DISABLE_SIGNAL_PER_SPAD
-//  #define VL53L8CX_DISABLE_RANGE_SIGMA_MM
+  #define VL53L8CX_DISABLE_SIGNAL_PER_SPAD
+  #define VL53L8CX_DISABLE_RANGE_SIGMA_MM
 //  #define VL53L8CX_DISABLE_DISTANCE_MM
-//  #define VL53L8CX_DISABLE_REFLECTANCE_PERCENT
+  #define VL53L8CX_DISABLE_REFLECTANCE_PERCENT
 //  #define VL53L8CX_DISABLE_TARGET_STATUS
-//  #define VL53L8CX_DISABLE_MOTION_INDICATOR
+  #define VL53L8CX_DISABLE_MOTION_INDICATOR
 
 #endif  // _VL53L8CX_PLATFORM_CONFIG_CUSTOM_H_
+
+
+/*
+To ensure data consistency, ST always recommends keeping the ‘number of targets detected’ and ‘target status’
+enabled. This filters the measurements depending on the target status (refer to Section 5.5: Results
+interpretation).
+
+5.5 Results interpretation
+The data returned by the VL53L8CX can be filtered to take into account the target status. The status indicates the
+measurement validity. The full status list is described in the following table.
+
+Table 4. List of available target status
+Target status Description
+0 Ranging data are not updated
+1 Signal rate too low on SPAD array
+2 Target phase
+3 Sigma estimator too high
+4 Target consistency failed
+5 Range valid
+6 Wrap around not performed (typically the first range)
+7 Rate consistency failed
+8 Signal rate too low for the current target
+9 Range valid with large pulse (may be due to a merged target)
+10 Range valid, but no target detected at previous range
+11 Measurement consistency failed
+12 Target blurred by another one, due to sharpener
+13 Target detected but inconsistent data. Frequently happens for secondary targets.
+255 No target detected (only if number of targets detected is enabled)
+
+To have consistent data, the user needs to filter invalid target status. To give a confidence rating, a target with
+status 5 is considered as 100% valid. A status of 6 or 9 can be considered with a confidence value of 50%. All
+other statuses are below the 50% confidence level.
+
+*/
