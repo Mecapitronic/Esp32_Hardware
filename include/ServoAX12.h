@@ -48,6 +48,7 @@ namespace ServoAX12
         float command_position = 0;
         bool IsMoving = false;
         bool ledState = false;
+        Timeout timeOut;
         // Tracking d'état d'initialisation
         bool initialized = false;           // Servo connecté et prêt
         uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
@@ -89,6 +90,10 @@ namespace ServoAX12
     
     void AddServo(Hardware_Config::ServoID id, String name, Hardware_Config::ServoPosition positionMin, Hardware_Config::ServoPosition positionMax);
 
+    ServoMotion GetServoByName(const String &name);
+    ServoMotion GetServoByNumber(uint8_t number);
+    ServoMotion GetServoByID(Hardware_Config::ServoID id);
+
     void StopAllServo();
     void StopServo(ServoMotion &servo);
 
@@ -100,8 +105,8 @@ namespace ServoAX12
     bool AreAllServoMoving();
     bool IsServoMoving(Hardware_Config::ServoID id);
 
-    void SetServoPosition(Hardware_Config::ServoID id, Hardware_Config::ServoPosition position);
-    void SetServoPosition(Hardware_Config::ServoID id, float position);
+    void SetServoPosition(Hardware_Config::ServoID id, Hardware_Config::ServoPosition position, int timeOutMs = 0);
+    void SetServoPosition(Hardware_Config::ServoID id, float position, int timeOutMs = 0);
 
     float GetServoPosition(Hardware_Config::ServoID id);
     

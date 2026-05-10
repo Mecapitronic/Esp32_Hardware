@@ -88,13 +88,6 @@ namespace ServoAX12
         println("Servo Update Task STOPPED !");
     }
 
-    void AddServo(ServoID id, String name, ServoPosition positionMin, ServoPosition positionMax)
-    {
-        Servos[id] = ServoMotion(id, name, positionMin, positionMax);
-        if (ServoExists(id))
-            InitServo(Servos.at(id));
-    }
-
     void InitServo(ServoMotion &servo)
     {
         if (servo.initialized || !Power::isPowerON())
@@ -137,6 +130,48 @@ namespace ServoAX12
             servo.failureCount++;
             println(" NOT connected! (attempt %d)", servo.failureCount);
         }
+    }    
+
+    void AddServo(ServoID id, String name, ServoPosition positionMin, ServoPosition positionMax)
+    {
+        Servos[id] = ServoMotion(id, name, positionMin, positionMax);
+        // It will be initialised in the Update Task
+    }
+
+    ServoMotion GetServoByName(const String &name)
+    {
+        for (const auto &[id, servo] : Servos)
+        {
+            if (servo.name == name)
+            {
+                return servo;
+            }
+        }
+        //printError("Servo with name " + name + " not found");
+        return ServoMotion(); // Return default ServoMotion
+    }
+
+    ServoMotion GetServoByNumber(uint8_t number)
+    {
+        for (const auto &[id, servo] : Servos)
+        {
+            if (servo.id == number)
+            {
+                return servo;
+            }
+        }
+        //printError("Servo with number " + String(number) + " not found");
+        return ServoMotion(); // Return default ServoMotion
+    }
+
+    ServoMotion GetServoByID(Hardware_Config::ServoID id)
+    {
+        if (Servos.find(id) != Servos.end())
+        {
+            return Servos.at(id);
+        }
+        //printError("Servo with ID " + String((uint8_t)id) + " not found");
+        return ServoMotion(); // Return default ServoMotion
     }
 
     void StopAllServo()
@@ -181,9 +216,9 @@ namespace ServoAX12
         }
         
         // Vérifier la tension avant de faire une opération I2C
-        if (!Power::isPowerON()) // 10.5V seuil de fonctionnement des AX12
+        if (!Power::isPowerON()) // seuil de fonctionnement des AX12
         {
-            servo.IsMoving = false;
+            //servo.IsMoving = false;
             return;
         }
         
@@ -199,8 +234,10 @@ namespace ServoAX12
 
         // On considère que le servo est en mouvement s'il est à plus ou moins de 5 degrés de la position commandée
         // on allume la LED pour indiquer qu'une commande est en cours
-        if (servo.position >= servo.command_position + 5
-            || servo.position <= servo.command_position - 5)
+        // Si on a indiqué un timeOut à la commande, on considère que le servo est en mouvement tant que le timeOut n'est pas expiré
+        // à la fin du timeOut (si != 0), le servo sera considéré arrivé (pour éviter de bloquer le code)
+        if ((servo.position >= servo.command_position + 5
+            || servo.position <= servo.command_position - 5) && !servo.timeOut.IsTimeOut())
         {
             if (!servo.ledState)
             {
@@ -209,6 +246,7 @@ namespace ServoAX12
                     dxl.ledOn(servo.id);
             }
             servo.IsMoving = true;
+            dxl.setGoalPosition(servo.id, servo.command_position, UNIT_DEGREE);
         }
         else
         {
@@ -241,12 +279,12 @@ namespace ServoAX12
         return Servos.at(id).IsMoving;
     }
     
-    void SetServoPosition(ServoID id, ServoPosition position)
+    void SetServoPosition(ServoID id, ServoPosition position, int timeOutMs)
     {
-        SetServoPosition(id, (float)position);
+        SetServoPosition(id, (float)position, timeOutMs);
     }
 
-    void SetServoPosition(ServoID id, float position)
+    void SetServoPosition(ServoID id, float position, int timeOutMs)
     {
         if (!ServoExists(id))
             return;
@@ -262,8 +300,17 @@ namespace ServoAX12
         }
         servo.command_position = position;
         servo.IsMoving = true;
-        if (!simulation)
-            dxl.setGoalPosition((uint8_t)id, servo.command_position, UNIT_DEGREE);
+        if(timeOutMs > 0)
+        {
+            servo.timeOut.Start(timeOutMs);
+        }
+        else
+        {
+            servo.timeOut.Stop();
+        }
+        // We set the command into the task, if power is enable
+        //if (!simulation)
+        //    dxl.setGoalPosition((uint8_t)id, servo.command_position, UNIT_DEGREE);
     }
 
     float GetServoPosition(ServoID id)
