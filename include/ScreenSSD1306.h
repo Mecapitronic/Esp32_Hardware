@@ -28,6 +28,7 @@ namespace Screen
     void Text(const String &text, uint8_t row = 0, uint8_t col = 0);
     void Logo(void);
     void Update();
+    void SetPose(const Pose newPose);
 
 } // namespace Screen
 

@@ -241,6 +241,22 @@ namespace Screen
                 return blinkState ? "BAU" : "   ";
             }
         }
+
+        Pose pose = {0, 0, 0};
+        String PoseXToText()
+        {
+            return "X " + String(pose.x);
+        }
+
+        String PoseYToText()
+        {
+            return "Y " + String(pose.y);
+        }
+
+        String PoseAToText()
+        {
+            return "A " + String(pose.h);
+        }
     } // namespace
 
     void Initialisation(void)
@@ -294,6 +310,10 @@ namespace Screen
             elementBattery.text = BatteryToText();
             elementWifi.text = WifiToText();
 
+            elementPosX.text = PoseXToText();
+            elementPosY.text = PoseYToText();
+            elementPosA.text = PoseAToText();
+
             elementServo1.text = ServoToText(1);
             elementServo2.text = ServoToText(2);
             write_element(elementMode);
@@ -324,6 +344,11 @@ namespace Screen
         {
             printError(e.what());
         }
+    }
+
+    void SetPose(const Pose newPose)
+    {
+        pose = newPose;
     }
 
 } // namespace Screen
