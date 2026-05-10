@@ -16,6 +16,7 @@ namespace Power
 
         bool lowVoltage = false;
         bool powerEnable = false;
+        bool lastPowerON = false;
         
         // Simulated values for SIMULATOR mode
         float simulatedBusVoltage_V = 12.0f;
@@ -52,7 +53,7 @@ namespace Power
         }
     }
 
-    void UpdateMeasurements(void)
+    void Update()
     {
         if (simulation)
         {
@@ -98,7 +99,13 @@ namespace Power
 
     void UpdatePower()
     {
-        digitalWrite(Hardware_Config::PIN_EN_MCU, isPowerON());
+        bool powerON = isPowerON();
+        if (powerON != lastPowerON)
+        {
+            lastPowerON = powerON;
+            println("Power is %s, low: %s, enable: %s", powerON ? "ON" : "OFF", lowVoltage ? "YES" : "NO", powerEnable ? "YES" : "NO");
+        }
+        digitalWrite(Hardware_Config::PIN_EN_MCU, powerON);
     }
 
     bool isPowerON()

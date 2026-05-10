@@ -28,6 +28,12 @@ namespace Hardware
 	 * Initialize all hardware modules and start their internal tasks.
 	 */
 	void Initialisation();
+	
+	/**
+	 * Task function to periodically update hardware modules.
+	 * This should be run in a FreeRTOS task.
+	 */
+	void TaskUpdateHardware(void *pvParameters);
 }
 
 #endif

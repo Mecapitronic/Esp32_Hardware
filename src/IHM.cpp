@@ -16,10 +16,9 @@ namespace IHM
         int ledState = LOW;
         Timeout ledTimeOut;
 
-        TaskThread taskUpdateIHM;
         CLEDController *builtInLEDController = nullptr;
         CRGB builtin_led;
-        constexpr int stripLEDCount = 10;
+        constexpr int stripLEDCount = 9;
         constexpr uint8_t teamLedIndex = 0;
         constexpr uint8_t modeLedIndex = stripLEDCount - 1;
         CLEDController *stripLEDController = nullptr;
@@ -60,77 +59,56 @@ namespace IHM
         {
             builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
         }
-        stripLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_WS2812_LED, RGB>(strip_led, stripLEDCount);
+
+        stripLEDController = &FastLED.addLeds<NEOPIXEL, Hardware_Config::PIN_WS2812_LED>(strip_led, stripLEDCount);
         fill_solid(strip_led, stripLEDCount, CRGB::Purple);
         if (stripLEDController)
         {
             stripLEDController->showLeds(BUILTIN_BRIGHTNESS);
         }
-
-        taskUpdateIHM = TaskThread(TaskUpdateIHM, "TaskUpdateIHM", 10000, 15, 0);
-
-        println("Vérifier que le BAU est retiré pour démarrer le robot");
-        while (bauReady != 1)
-        {
-            println("[!] Retirer le BAU [!]");
-            delay(500);
-        }
     }
 
-    void TaskUpdateIHM(void *pvParameters)
+    void Update()
     {
-        println("Start Task Update IHM");
-        Chrono chrono("IHM", 1000);
-        while (true)
+        try
         {
-            chrono.Start();
-            try
+            // Lecture du bouton Team Yellow / Blue
+            Team teamTmp = (Team)digitalRead(Hardware_Config::PIN_TEAM);
+            if (teamTmp != team)
             {
-                // Lecture du bouton Team Yellow / Blue
-                Team teamTmp = (Team)digitalRead(Hardware_Config::PIN_TEAM);
-                if (teamTmp != team)
-                {
-                    team = teamTmp;
-                    PrintTeam();
-                }
-
-                // Lecture du bouton Switch TEST / OK
-                int switchTmp = digitalRead(Hardware_Config::PIN_SWITCH);
-                if (switchTmp != switchMode)
-                {
-                    switchMode = switchTmp;
-                    PrintSwitch();
-                }
-
-                // Lecture de la tirette
-                int tiretteTmp = !digitalRead(Hardware_Config::PIN_START);
-                if (tiretteTmp != tirettePresent)
-                {
-                    tirettePresent = tiretteTmp;
-                    PrintStart();
-                }
-
-                // Lecture du BAU
-                int bauTmp = digitalRead(Hardware_Config::PIN_BAU);
-                if (bauTmp != bauReady)
-                {
-                    bauReady = bauTmp;
-                    PrintBAU();
-                }
-                Blink();
-                Power::UpdateMeasurements();
+                team = teamTmp;
+                PrintTeam();
             }
-            catch (const std::exception &e)
+
+            // Lecture du bouton Switch TEST / OK
+            int switchTmp = digitalRead(Hardware_Config::PIN_SWITCH);
+            if (switchTmp != switchMode)
             {
-                printError(e.what());
+                switchMode = switchTmp;
+                PrintSwitch();
             }
-            if (chrono.Check())
+
+            // Lecture de la tirette
+            int tiretteTmp = !digitalRead(Hardware_Config::PIN_START);
+            if (tiretteTmp != tirettePresent)
             {
-                printChrono(chrono);
+                tirettePresent = tiretteTmp;
+                PrintStart();
             }
-            vTaskDelay(10);
+
+            // Lecture du BAU
+            int bauTmp = digitalRead(Hardware_Config::PIN_BAU);
+            if (bauTmp != bauReady)
+            {
+                bauReady = bauTmp;
+                PrintBAU();
+            }
+            Blink();
         }
-        println("IHM Update Task STOPPED !");
+        catch (const std::exception &e)
+        {
+            printError(e.what());
+        }
     }
 
     void Blink()
@@ -183,7 +161,7 @@ namespace IHM
     void renderStatusIndicators()
     {
         const CRGB teamColor = (IHM::team == IHM::Team::Jaune) ? CRGB::Gold : ((IHM::team == IHM::Team::Bleu) ? CRGB::DodgerBlue : CRGB::White);
-        const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::LimeGreen : ((IHM::switchMode == 0) ? CRGB::DarkOrange : CRGB::White);
+        const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::Green : ((IHM::switchMode == 0) ? CRGB::Violet: CRGB::White);
 
         strip_led[teamLedIndex] = teamColor;
         strip_led[modeLedIndex] = modeColor;

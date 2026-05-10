@@ -27,7 +27,7 @@ namespace Screen
     void ClearDisplay(void);
     void Text(const String &text, uint8_t row = 0, uint8_t col = 0);
     void Logo(void);
-    void TaskUpdateScreen(void *pvParameters);
+    void Update();
 
 } // namespace Screen
 

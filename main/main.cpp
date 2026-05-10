@@ -7,8 +7,7 @@ void setup(void)
     ESP32_Helper::Initialisation();
     Hardware::Initialisation();
     ServoAX12::AddServo(Hardware_Config::ServoID::Test, "Test", Hardware_Config::ServoPosition::TestMin, Hardware_Config::ServoPosition::TestMax);
-    
-
+    ESP32_Helper::RegisterCommandHandler("AX12", ServoAX12::HandleCommand, ServoAX12::PrintCommandHelp);
 }
 
 void loop(void)

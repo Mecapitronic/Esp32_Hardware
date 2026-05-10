@@ -33,7 +33,7 @@ namespace IHM
     extern bool useBlink;
 
     void Initialisation();
-    void TaskUpdateIHM(void *pvParameters);
+    void Update();
 
     void Blink();
     void renderStatusIndicators();

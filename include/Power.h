@@ -12,7 +12,7 @@ namespace Power
     constexpr float minVoltage_V = 11.0;  // Minimum voltage of the battery
 
     void Initialisation(void);
-    void UpdateMeasurements(void);
+    void Update();
 
     void DisablePower();
     void EnablePower();

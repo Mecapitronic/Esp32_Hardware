@@ -11,7 +11,7 @@ namespace ToF_VL53L8CX
     constexpr uint8_t RANGING_FREQUENCY_HZ = 5;  // 5Hz measurement rate
 
     void Initialisation();
-    void TaskUpdateVL53(void *pvParameters);
+    void Update();
 
     // Getters for sensor data
     const VL53L8CX_ResultsData& getSensorData();

@@ -22,7 +22,6 @@ namespace Screen
             String oldText;
         };
 
-        TaskThread taskUpdateScreen;
         Timeout blinkTimeOut;
 
         Element elementMode{0, 0, "", ""};
@@ -172,17 +171,17 @@ namespace Screen
             {
                 timeSec = 0;
             }
-            if (timeSec > 999)
+            if (timeSec > 9999)
             {
-                timeSec = 999;
+                timeSec = 9999;
             }
 
             String out = String(timeSec);
-            while (out.length() < 3)
+            while (out.length() < 4)
             {
                 out = " " + out;
             }
-            return out + " s";
+            return out + "s";
         }
 
         String WifiToText()
@@ -208,6 +207,19 @@ namespace Screen
             }
         }
 
+        String ServoToText(int servoNum)
+        {
+            ServoAX12::ServoMotion servo = ServoAX12::GetServoByNumber(servoNum);
+            if (servo.id != (uint8_t)Hardware_Config::ServoID::BroadCast)
+            {
+                return String(servo.id) + ":" + String(servo.position, 1);
+            }
+            else
+            {
+                return String(servo.id) + ":" + "?";
+            }
+        }
+
         String BatteryToText()
         {
             return (Power::isPowerON() ? "ON  " : "OFF ") + String(Power::getBusVoltage_V(), 2) + "V " + String(Power::getCurrent_mA(), 0) + "mA";
@@ -222,7 +234,7 @@ namespace Screen
             }
             else
             {
-                if(blinkTimeOut.IsTimeOut())
+                if (blinkTimeOut.IsTimeOut())
                 {
                     blinkState = !blinkState;
                 }
@@ -243,8 +255,6 @@ namespace Screen
         Screen::Logo();
         delay(500);
         blinkTimeOut.Start(500);
-
-        taskUpdateScreen = TaskThread(TaskUpdateScreen, "TaskUpdateScreen", 10000, 15, 0);
     }
 
     void ClearDisplay()
@@ -270,64 +280,50 @@ namespace Screen
         write_element(logo);
     }
 
-    void TaskUpdateScreen(void *pvParameters)
+    void Update()
     {
-        (void)pvParameters;
-        println("Start Task Update Screen");
-        Chrono chrono("Screen", 100);
-        while (true)
+        try
         {
-            chrono.Start();
-            try
-            {
-                elementMode.text = ModeToText();
-                elementBau.text = BAUToText();
-                elementState.text = MatchStateToText();
-                elementColor.text = TeamToText();
-                //elementPami.text = numPami >= 0 ? String(numPami) : "?";
-                elementTime.text = FormatTimeSec();
+            elementMode.text = ModeToText();
+            elementBau.text = BAUToText();
+            elementState.text = MatchStateToText();
+            elementColor.text = TeamToText();
+            // elementPami.text = numPami >= 0 ? String(numPami) : "?";
+            elementTime.text = FormatTimeSec();
 
-                elementBattery.text = BatteryToText();
-                elementWifi.text = WifiToText();
-                
-                //elementServo1.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::VL53)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::VL53), 1);
-                //elementServo2.text = String(static_cast<uint8_t>(Hardware_Config::ServoID::Bras)) + ":" + String(ServoAX12::GetServoPosition(Hardware_Config::ServoID::Bras), 1);
+            elementBattery.text = BatteryToText();
+            elementWifi.text = WifiToText();
 
-                write_element(elementMode);
-                write_element(elementBau);
-                write_element(elementPami);
-                write_element(elementState);
+            elementServo1.text = ServoToText(1);
+            elementServo2.text = ServoToText(2);
+            write_element(elementMode);
+            write_element(elementBau);
+            write_element(elementPami);
+            write_element(elementState);
 
-                write_element(elementColor);
-                write_element(elementTime);
+            write_element(elementColor);
+            write_element(elementTime);
 
-                write_element(elementBlankLine2);
+            write_element(elementBlankLine2);
 
-                write_element(elementPosX);
-                write_element(elementAx12Title);
+            write_element(elementPosX);
+            write_element(elementAx12Title);
 
-                write_element(elementPosY);
-                write_element(elementServo1);
+            write_element(elementPosY);
+            write_element(elementServo1);
 
-                write_element(elementPosA);
-                write_element(elementServo2);
+            write_element(elementPosA);
+            write_element(elementServo2);
 
-                write_element(elementBlankLine6);
-                
-                write_element(elementBattery);
-                write_element(elementWifi);
-            }
-            catch (const std::exception &e)
-            {
-                printError(e.what());
-            }
-            if (chrono.Check())
-            {
-                printChrono(chrono);
-            }
-            vTaskDelay(200);
+            write_element(elementBlankLine6);
+
+            write_element(elementBattery);
+            write_element(elementWifi);
         }
-        println("Screen Update Task STOPPED !");
+        catch (const std::exception &e)
+        {
+            printError(e.what());
+        }
     }
 
 } // namespace Screen

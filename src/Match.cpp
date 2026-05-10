@@ -35,6 +35,8 @@ namespace Match
     {
         if (matchState != State::MATCH_BOOT && matchState != State::MATCH_WAIT)
             return millis() - startTime;
+        else if(matchState == State::MATCH_BOOT)
+            return millis();
         else
             return 0; // Match not started yet
     }
@@ -98,7 +100,7 @@ namespace Match
                     {
                         numPami = numPamiTmp;
                         println("N° PAMI : %i", numPami);
-                        Wifi_Helper::SetLocalIP("192.168.137."
+                        Wifi_Helper::SetLocalIP("192.168.43."
                                                 + String(100 + numPami + 1));
                     }*/
                    
