@@ -30,6 +30,7 @@ namespace Screen
         Element elementState{0, 16, "", ""};
 
         Element elementColor{1, 0, "", ""};
+        Element elementLowBattery{1, 7, "", ""};
         Element elementTime{1, 16, "", ""};
 
         Element elementBlankLine2{2, 0, "                     ", ""};
@@ -100,6 +101,7 @@ namespace Screen
             elementPami.oldText = "";
             elementTime.oldText = "";
             elementBlankLine2.oldText = "";
+            elementLowBattery.oldText = "";
             elementPosX.oldText = "";
             elementAx12Title.oldText = "";
             elementPosY.oldText = "";
@@ -225,6 +227,11 @@ namespace Screen
             return (Power::isPowerON() ? "ON  " : "OFF ") + String(Power::getBusVoltage_V(), 2) + "V " + String(Power::getCurrent_mA(), 0) + "mA";
         }
 
+        String LowBatteryToText()
+        {
+            return Power::isLowVoltage() ? "! Low !" : "       ";
+        }
+
         bool blinkState = false;
         String BAUToText()
         {
@@ -310,6 +317,8 @@ namespace Screen
             elementBattery.text = BatteryToText();
             elementWifi.text = WifiToText();
 
+            elementLowBattery.text = LowBatteryToText();
+
             elementPosX.text = PoseXToText();
             elementPosY.text = PoseYToText();
             elementPosA.text = PoseAToText();
@@ -322,6 +331,7 @@ namespace Screen
             write_element(elementState);
 
             write_element(elementColor);
+            write_element(elementLowBattery);
             write_element(elementTime);
 
             write_element(elementBlankLine2);

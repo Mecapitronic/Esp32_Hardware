@@ -15,6 +15,7 @@ namespace Power
         bool initDone = false;
 
         bool lowVoltage = false;
+        bool minVoltage = false;
         bool powerEnable = false;
         bool lastPowerON = false;
         
@@ -77,9 +78,13 @@ namespace Power
             current_mA = ina219.getCurrent_mA();
             power_mW = ina219.getPower_mW();
 
-            if(busVoltage_V < minVoltage_V)
+            if(busVoltage_V < minVoltage1_V)
+                minVoltage = true;
+            else if (busVoltage_V > minVoltage2_V)
+                minVoltage = false;
+            if(busVoltage_V < lowVoltage_V)
                 lowVoltage = true;
-            else
+            else if (busVoltage_V > lowVoltage_V)
                 lowVoltage = false;
             UpdatePower();
         }
@@ -103,14 +108,14 @@ namespace Power
         if (powerON != lastPowerON)
         {
             lastPowerON = powerON;
-            println("Power is %s, low: %s, enable: %s", powerON ? "ON" : "OFF", lowVoltage ? "YES" : "NO", powerEnable ? "YES" : "NO");
+            println("Power is %s, low: %s, enable: %s, bauReady: %s", powerON ? "ON" : "OFF", minVoltage ? "YES" : "NO", powerEnable ? "YES" : "NO", IHM::bauReady == 1 ? "Retiré" : "Enclenché");
         }
         digitalWrite(Hardware_Config::PIN_EN_MCU, powerON);
     }
 
     bool isPowerON()
     {
-        if(powerEnable && !lowVoltage)
+        if(powerEnable && !minVoltage)// && IHM::bauReady == 1)
             return true;
         else
             return false;
@@ -134,6 +139,11 @@ namespace Power
     float getPower_mW()
     {
         return power_mW;
+    }
+
+    bool isLowVoltage()
+    {
+        return lowVoltage;
     }
 
 } // namespace Power
