@@ -39,6 +39,7 @@ namespace Hardware
         taskUpdateHardware = TaskThread(TaskUpdateHardware, "TaskUpdateHardware", 20000, 10, 0);
 
         Match::Initialisation();
+        ESP32_Helper::RegisterCommandHandler("Match", Match::HandleCommand, Match::PrintCommandHelp);
 
         ServoAX12::Initialisation(SERIAL_SERVO, RX_SERVO, TX_SERVO, PIN_SERVO_DIR);
         //ServoAX12::AddServo(Hardware_Config::ServoID::Test, "Test", Hardware_Config::ServoPosition::TestMin, Hardware_Config::ServoPosition::TestMax);

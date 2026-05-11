@@ -35,14 +35,14 @@ namespace Screen
 
         Element elementBlankLine2{2, 0, "                     ", ""};
 
-        Element elementPosX{3, 0, "X  200", ""};
+        Element elementPosX{3, 0, "X  123", ""};
         Element elementAx12Title{3, 16, "AX12", ""};
 
-        Element elementPosY{4, 0, "Y 1500", ""};
-        Element elementServo1{4, 14, "1:100", ""};
+        Element elementPosY{4, 0, "Y  456", ""};
+        Element elementServo1{4, 14, "1:111", ""};
 
-        Element elementPosA{5, 0, "A  180", ""};
-        Element elementServo2{5, 14, "2:200", ""};
+        Element elementPosA{5, 0, "A  789", ""};
+        Element elementServo2{5, 14, "2:222", ""};
 
         Element elementBlankLine6{6, 0, "                     ", ""};
 
@@ -156,6 +156,13 @@ namespace Screen
                 return "MATCH";
             }
             return "MODE";
+        }
+
+        String NumPamiToText()
+        {
+            if(Match::GetNumPami() == 10)
+                return "R";
+            return String(Match::GetNumPami());
         }
 
         String FormatMatchTime()
@@ -311,7 +318,7 @@ namespace Screen
             elementBau.text = BAUToText();
             elementState.text = MatchStateToText();
             elementColor.text = TeamToText();
-            // elementPami.text = numPami >= 0 ? String(numPami) : "?";
+            elementPami.text = NumPamiToText();
             elementTime.text = FormatTimeSec();
 
             elementBattery.text = BatteryToText();

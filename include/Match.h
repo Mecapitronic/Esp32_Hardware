@@ -31,9 +31,13 @@ namespace Match
     void startMatchTimer();
     long getMatchTimeSec();
     long getMatchTimeMs();
+    void SetNumPami(int num);
+    int GetNumPami();
     void CheckEndOfMatch();
     void printMatch();
 
     void TaskUpdateMatch(void *pvParameters);
+    bool HandleCommand(Command cmd);
+    void PrintCommandHelp();
 } // namespace Match
 #endif

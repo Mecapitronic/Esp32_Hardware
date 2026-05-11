@@ -5,6 +5,7 @@ namespace Match
 {
     // Global variable definition
     State matchState = State::MATCH_BOOT;
+    int numPami = 0;
 
     namespace
     {
@@ -17,6 +18,16 @@ namespace Match
 
     void Initialisation()
     {
+        int pami = Preferences_Helper::LoadFromPreference("NumPami", 0);
+        if(pami == 0)
+        {
+            printError("N° PAMI : " + String(pami));
+        }
+        else
+        {
+            println("N° PAMI : %i", pami);
+        }
+        SetNumPami(pami);
         // Start the match timer task
         taskUpdateMatch = TaskThread(TaskUpdateMatch, "TaskUpdateMatch", 10000, 15, 0);
     }
@@ -39,6 +50,19 @@ namespace Match
             return millis();
         else
             return 0; // Match not started yet
+    }
+
+    void SetNumPami(int num)
+    {
+        numPami = num;
+        Preferences_Helper::SaveToPreference("NumPami", numPami);
+        println("N° PAMI : %i", numPami);
+        Wifi_Helper::SetLocalIP("192.168.43." + String(100 + numPami));
+    }
+
+    int GetNumPami()
+    {
+        return numPami;
     }
 
     void CheckEndOfMatch()
@@ -94,16 +118,6 @@ namespace Match
                 // Tirette présente, en attente de retrait de la tirette pour démarrer le match
                 if (Match::matchState == State::MATCH_WAIT)
                 {
-                    // Lecture do codage du numéro de PAMI
-                    /*int numPamiTmp = ReadNumPami();
-                    if (numPamiTmp != numPami)
-                    {
-                        numPami = numPamiTmp;
-                        println("N° PAMI : %i", numPami);
-                        Wifi_Helper::SetLocalIP("192.168.43."
-                                                + String(100 + numPami + 1));
-                    }*/
-                   
                     Power::EnablePower();
 
                     if (IHM::tirettePresent == 0)
@@ -174,5 +188,34 @@ namespace Match
             vTaskDelay(10);
         }
         println("Match Update Task STOPPED !");
+    }
+
+    bool HandleCommand(Command cmd)
+    {
+        if(cmd.cmdEquals("MatchNumPami") && cmd.size == 1)
+        {
+            int numPamiCmd = cmd.data[0];
+            if(numPamiCmd >= 0 && numPamiCmd <= 99)
+            {
+                SetNumPami(numPamiCmd);
+                return true;
+            }
+            else
+            {
+                printError("Invalid NumPami value: " + String(numPamiCmd));
+                return false;
+            }
+        }
+        else
+        {
+            printError("Unknown command: " + String(cmd.cmd));
+            return false;
+        }
+    }
+
+    void PrintCommandHelp()
+    {
+        println("Available Commands:");
+        println("NumPami:<value> - Set the PAMI number (1-99)");
     }
 } // namespace Match
