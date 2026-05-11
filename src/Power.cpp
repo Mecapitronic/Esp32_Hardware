@@ -77,11 +77,6 @@ namespace Power
             shuntVoltage_mV = ina219.getShuntVoltage_mV();
             current_mA = ina219.getCurrent_mA();
             power_mW = ina219.getPower_mW();
-
-            if(busVoltage_V < minVoltage1_V)
-                minVoltage = true;
-            else if (busVoltage_V > minVoltage2_V)
-                minVoltage = false;
             if(busVoltage_V < lowVoltage_V)
                 lowVoltage = true;
             else if (busVoltage_V > lowVoltage_V)
@@ -104,21 +99,17 @@ namespace Power
 
     void UpdatePower()
     {
-        bool powerON = isPowerON();
-        if (powerON != lastPowerON)
+        if (powerEnable != lastPowerON)
         {
-            lastPowerON = powerON;
-            println("Power is %s, low: %s, enable: %s, bauReady: %s", powerON ? "ON" : "OFF", minVoltage ? "YES" : "NO", powerEnable ? "YES" : "NO", IHM::bauReady == 1 ? "Retiré" : "Enclenché");
+            lastPowerON = powerEnable;
+            println("Power is %s", powerEnable ? "ON" : "OFF");
         }
-        digitalWrite(Hardware_Config::PIN_EN_MCU, powerON);
+        digitalWrite(Hardware_Config::PIN_EN_MCU, powerEnable);
     }
 
     bool isPowerON()
     {
-        if(powerEnable && !minVoltage)// && IHM::bauReady == 1)
-            return true;
-        else
-            return false;
+        return powerEnable;
     }
 
     float getBusVoltage_V()

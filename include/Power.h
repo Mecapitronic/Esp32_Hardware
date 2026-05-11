@@ -8,10 +8,7 @@
 
 namespace Power
 {
-    constexpr float maxVoltage_V = 12.6; // Maximum voltage of the battery
     constexpr float lowVoltage_V = 11.0;  // Low Voltage warning
-    constexpr float minVoltage1_V = 10.0;  // Minimum voltage of the battery to shut down power
-    constexpr float minVoltage2_V = 10.5;  // Minimum voltage of the battery to power up
 
     void Initialisation(void);
     void Update();
