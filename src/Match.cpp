@@ -21,11 +21,11 @@ namespace Match
         int pami = Preferences_Helper::LoadFromPreference("NumPami", 0);
         if(pami == 0)
         {
-            printError("N° PAMI : " + String(pami));
+            printError("No N° PAMI : " + String(pami));
         }
         else
         {
-            println("N° PAMI : %i", pami);
+            println("Load N° PAMI : %i", pami);
         }
         SetNumPami(pami);
         // Start the match timer task
@@ -56,7 +56,7 @@ namespace Match
     {
         numPami = num;
         Preferences_Helper::SaveToPreference("NumPami", numPami);
-        println("N° PAMI : %i", numPami);
+        println("Set N° PAMI : %i", numPami);
         Wifi_Helper::SetLocalIP("192.168.43." + String(100 + numPami));
     }
 
