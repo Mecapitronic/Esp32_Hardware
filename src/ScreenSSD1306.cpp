@@ -283,7 +283,6 @@ namespace Screen
         ResetElements();
 
         Screen::Logo();
-        delay(500);
         blinkTimeOut.Start(500);
     }
 
@@ -306,7 +305,7 @@ namespace Screen
 
     void Logo(void)
     {
-        Element logo{2, 0, "     PAMI READY", ""};
+        Element logo{2, 0, "     PAMI START", ""};
         write_element(logo);
     }
 

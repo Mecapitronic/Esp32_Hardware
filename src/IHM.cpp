@@ -163,6 +163,16 @@ namespace IHM
         const CRGB teamColor = (IHM::team == IHM::Team::Jaune) ? CRGB::Gold : ((IHM::team == IHM::Team::Bleu) ? CRGB::DodgerBlue : CRGB::White);
         const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::Green : ((IHM::switchMode == 0) ? CRGB::Violet: CRGB::White);
 
+        int numPami = Match::GetNumPami();
+        if(numPami>0 && numPami <= stripLEDCount - 2)
+        {
+            int startIndex = 5 - numPami/2;
+            for (size_t i = startIndex; i < numPami+startIndex; i++)
+            {
+                strip_led[i] = CRGB::White;
+            }
+        }        
+
         strip_led[teamLedIndex] = teamColor;
         strip_led[modeLedIndex] = modeColor;
     }
