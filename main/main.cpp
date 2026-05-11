@@ -1,13 +1,17 @@
 #include "ESP32_Hardware.h"
 using namespace Printer;
 using namespace Hardware_Config;
+using namespace ServoAX12;
 
 void setup(void)
 {
     ESP32_Helper::Initialisation();
     Hardware::Initialisation();
-    ServoAX12::AddServo(Hardware_Config::ServoID::Test, "Test", Hardware_Config::ServoPosition::TestMin, Hardware_Config::ServoPosition::TestMax);
-    ESP32_Helper::RegisterCommandHandler("AX12", ServoAX12::HandleCommand, ServoAX12::PrintCommandHelp);
+    Power::EnablePower();
+
+    ServoConfig testConfig = ServoConfig((uint8_t)ServoID::VL53,
+        std::array<int32_t, MAX_SERVO_POSITIONS>{0, 145, 290}, 3);
+    AddServo(ServoID::VL53, "Test", testConfig);
 }
 
 void loop(void)
@@ -20,10 +24,10 @@ void loop(void)
         println("");
     */
     /*
-    ServoAX12::SetServoPosition(Hardware_Config::ServoID::Test, Hardware_Config::ServoPosition::TestMin);
-    while (ServoAX12::IsServoMoving(Hardware_Config::ServoID::Test))
+    SetServoPosition(ServoID::VL53, 0.0f);
+    while (IsServoMoving(ServoID::VL53))
     {
-        ServoAX12::TeleplotAllPosition();
+        TeleplotAllPosition();
         vTaskDelay(100);
     }
     */

@@ -1,6 +1,7 @@
 #ifndef SERVO_AX12_H
 #define SERVO_AX12_H
 
+#include <array>
 #include <Dynamixel2Arduino.h>
 #include <unordered_map>
 
@@ -8,6 +9,10 @@
 
 namespace ServoAX12
 {
+        constexpr size_t MAX_SERVO_POSITIONS = 10;
+        static_assert(Hardware_Config::ServoPositionCount <= MAX_SERVO_POSITIONS,
+                      "ServoPositionCount exceeds MAX_SERVO_POSITIONS");
+
     // https://github.com/ROBOTIS-GIT/Dynamixel2Arduino/tree/master
 
     constexpr size_t MAX_BAUD = 5;
@@ -27,100 +32,124 @@ namespace ServoAX12
     const DxlProtocolVersion dxlProtocol[MAX_PROTOCOL] = {DxlProtocolVersion::PROTOCOL_1,
                                                           DxlProtocolVersion::PROTOCOL_2};
 
-    // id vitesse acceleration position command_position ledState
+    /**
+     * @brief Structure représentant la configuration d'un servo moteur.
+     * @param ax12Id ID physique du servo moteur sur le bus Dynamixel
+     * @param positions Tableau des positions prédéfinies pour ce servo moteur.
+     *                  positions[0] = min, positions[positionCount-1] = max
+     * @param positionCount Nombre de positions valides dans le tableau (doit être <= MAX_SERVO_POSITIONS)
+     */
+    struct ServoConfig
+    {
+        uint8_t ax12Id;
+        std::array<int32_t, MAX_SERVO_POSITIONS> positions;
+        uint8_t positionCount;
+
+        ServoConfig() = default;
+        ServoConfig(uint8_t _ax12Id, const std::array<int32_t, MAX_SERVO_POSITIONS> &_positions, uint8_t _positionCount)
+            : ax12Id(_ax12Id), positions(_positions), positionCount(_positionCount) {}
+        void AddPosition(int32_t position, Hardware_Config::ServoPosition index)
+        {
+            size_t idx = static_cast<size_t>(index);
+            if (idx < MAX_SERVO_POSITIONS)
+            {
+                positions[idx] = position;
+                if (positionCount <= idx)
+                {
+                    positionCount = idx + 1;
+                }
+            }
+        }
+    };
+
     /**
      * @brief Structure représentant l'état d'un servo moteur.
      * @param id Identifiant du servo moteur.
-     * @param vitesse Vitesse maximale du servo moteur en degrés par seconde.
-     * @param positionMin Position minimale du servo moteur.
-     * @param positionMax Position maximale du servo moteur.
+     * @param position Position actuelle du servo moteur.
      * @param command_position Position cible du servo moteur.
-     * @param ledState État de la LED du servo moteur (allumée en mouvement, éteinte
+     * @param ledState État de la LED du servo moteur (allumée en mouvement, éteinte sinon).
      * sinon).
      */
     struct ServoMotion
     {
-        uint8_t id = (uint8_t)Hardware_Config::ServoID::BroadCast;
         String name = "";
         float position = 0;
-        Hardware_Config::ServoPosition positionMin = Hardware_Config::ServoPosition::Min;
-        Hardware_Config::ServoPosition positionMax = Hardware_Config::ServoPosition::Max;
+        ServoConfig config = ServoConfig((uint8_t)Hardware_Config::ServoID::BroadCast, {0}, 1);
         float command_position = 0;
         bool IsMoving = false;
         bool ledState = false;
         Timeout timeOut;
         // Tracking d'état d'initialisation
-        bool initialized = false;           // Servo connecté et prêt
+        bool initialized = false;       // Servo connecté et prêt
         uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
         int failureCount = 0;           // Compteur d'erreurs consécutives
-        
+
         ServoMotion() = default;
 
         /**
          * @brief Construct a new Servo Motion object
          *
-         * @param _id Identifiant du servo moteur
-         * @param _vitesse Vitesse maximale du servo moteur en degrés par seconde
-         * @param _acceleration Accélération maximale du servo moteur en degrés par
-         * seconde carrée
+         * @param _name Nom du servo
+         * @param _config Configuration chargée depuis les préférences
          */
-        ServoMotion(Hardware_Config::ServoID _id,
-                    String _name,
-                    Hardware_Config::ServoPosition _positionMin,
-                    Hardware_Config::ServoPosition _positionMax)
+        ServoMotion(String _name,
+                    const ServoConfig &_config)
         {
             // Initialisation des valeurs
-            id = (uint8_t)_id;
             name = _name;
-            positionMin = _positionMin;
-            positionMax = _positionMax;
+            config = _config;
+            command_position = (float)config.positions[0];
         }
 
         bool operator==(const ServoMotion &other) const
         {
-            return id == other.id;
+            return config.ax12Id == other.config.ax12Id;
         }
     };
 
     void Initialisation(HardwareSerial &serial, int8_t rxPin, int8_t txPin, int8_t dirPin, BaudRate baudRate = BaudRate::BAUD_RATE_1000000, DxlProtocolVersion dxlProtocolVersion = DxlProtocolVersion::PROTOCOL_1);
-    
+
     [[noreturn]] void TaskUpdateServo(void *pvParameters);
 
     void InitServo(ServoMotion &servo);
-    
-    void AddServo(Hardware_Config::ServoID id, String name, Hardware_Config::ServoPosition positionMin, Hardware_Config::ServoPosition positionMax);
+    void AddServo(Hardware_Config::ServoID logicalId, String name, const ServoConfig &defaults);
 
-    ServoMotion GetServoByName(const String &name);
+    //ServoMotion GetServoByName(const String &name);
     ServoMotion GetServoByNumber(uint8_t number);
-    ServoMotion GetServoByID(Hardware_Config::ServoID id);
+    //ServoMotion GetServoByID(Hardware_Config::ServoID logicalId);
+    //ServoMotion GetServoByIDNumber(uint8_t ax12Id);
 
     void StopAllServo();
     void StopServo(ServoMotion &servo);
 
     void StartAllServo();
     void StartServo(ServoMotion &servo);
-    
+
     void UpdateServo(ServoMotion &servo);
 
     bool AreAllServoMoving();
-    bool IsServoMoving(Hardware_Config::ServoID id);
+    bool IsServoMoving(Hardware_Config::ServoID logicalId);
 
-    void SetServoPosition(Hardware_Config::ServoID id, Hardware_Config::ServoPosition position, int timeOutMs = 0);
-    void SetServoPosition(Hardware_Config::ServoID id, float position, int timeOutMs = 0);
+    void SetServoPosition(Hardware_Config::ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs = 0);
+    void SetServoPosition(Hardware_Config::ServoID logicalId, float position, int timeOutMs = 0);
 
-    float GetServoPosition(Hardware_Config::ServoID id);
-    
+    float GetServoPosition(Hardware_Config::ServoID logicalId);
+
     bool HandleCommand(Command cmd);
     void PrintCommandHelp();
 
     int16_t Scan();
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
-    void PrintDxlInfo(Hardware_Config::ServoID id = Hardware_Config::ServoID::BroadCast);
+    void PrintDxlInfo(Hardware_Config::ServoID logicalId = Hardware_Config::ServoID::BroadCast);
+
+    void ConfigureServo(const String &name, const String &field, int32_t value);
+    void ResetServoConfig(const String &name);
+    void PrintServoConfigs();
 
     void TeleplotAllPosition();
-    void TeleplotPosition(Hardware_Config::ServoID id);
+    void TeleplotPosition(Hardware_Config::ServoID logicalId);
     void PrintAllPosition();
-    void PrintPosition(Hardware_Config::ServoID id);
+    void PrintPosition(Hardware_Config::ServoID logicalId);
 } // namespace ServoAX12
 
 namespace std
@@ -129,8 +158,8 @@ namespace std
     {
         std::size_t operator()(const ServoAX12::ServoMotion &k) const
         {
-            // Hash only the name, since operator== only compares id
-            return std::hash<uint8_t>()(k.id);
+            // Hash on physical AX12 ID, same key as operator==
+            return std::hash<uint8_t>()(k.config.ax12Id);
         }
     };
 } // namespace std
