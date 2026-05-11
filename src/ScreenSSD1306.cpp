@@ -221,11 +221,15 @@ namespace Screen
             ServoAX12::ServoMotion servo = ServoAX12::GetServoByNumber(servoNum);
             if (servo.id != (uint8_t)Hardware_Config::ServoID::BroadCast)
             {
+                if(!servo.initialized)
+                {
+                    return String(servo.id) + ": ?";
+                }
                 return String(servo.id) + ":" + String(servo.position, 1);
             }
             else
             {
-                return String(servo.id) + ":" + "?";
+                return String(servoNum) + ": X";
             }
         }
 
