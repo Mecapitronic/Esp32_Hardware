@@ -39,10 +39,10 @@ namespace Screen
         Element elementAx12Title{3, 16, "AX12", ""};
 
         Element elementPosY{4, 0, "Y  456", ""};
-        Element elementServo1{4, 14, "1:111", ""};
+        Element elementServo1{4, 11, "Srv1:111", ""};
 
         Element elementPosA{5, 0, "A  789", ""};
-        Element elementServo2{5, 14, "2:222", ""};
+        Element elementServo2{5, 11, "Srv2:222", ""};
 
         Element elementBlankLine6{6, 0, "                     ", ""};
 
@@ -219,13 +219,13 @@ namespace Screen
         String ServoToText(int servoNum)
         {
             ServoAX12::ServoMotion servo = ServoAX12::GetServoByNumber(servoNum);
-            if (servo.id != (uint8_t)Hardware_Config::ServoID::BroadCast)
+            if (servo.config.ax12Id != (uint8_t)Hardware_Config::ServoID::BroadCast)
             {
                 if(!servo.initialized)
                 {
-                    return String(servo.id) + ": ?";
+                    return String(servo.name) + ": ?";
                 }
-                return String(servo.id) + ":" + String(servo.position, 1);
+                return String(servo.name) + ":" + String(servo.position, 1);
             }
             else
             {
@@ -333,8 +333,8 @@ namespace Screen
             elementPosY.text = PoseYToText();
             elementPosA.text = PoseAToText();
 
-            elementServo1.text = ServoToText(1);
-            elementServo2.text = ServoToText(2);
+            elementServo1.text = ServoToText(0);
+            elementServo2.text = ServoToText(1);
             write_element(elementMode);
             write_element(elementBau);
             write_element(elementPami);
