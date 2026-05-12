@@ -174,7 +174,6 @@ namespace Match
                     // Disable Motor & Servo Power
                     Power::DisablePower();
                     IHM::useBlink = false;
-                    //ServoAX12::StopAllServo();
                 }
             }
             catch (std::exception const &e)

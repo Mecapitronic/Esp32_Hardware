@@ -41,9 +41,9 @@ namespace ServoAX12
      */
     struct ServoConfig
     {
-        uint8_t ax12Id;
-        std::array<int32_t, MAX_SERVO_POSITIONS> positions;
-        uint8_t positionCount;
+        uint8_t ax12Id = (uint8_t)Hardware_Config::ServoID::BroadCast;
+        std::array<int32_t, MAX_SERVO_POSITIONS> positions{};
+        uint8_t positionCount = 1;
 
         ServoConfig() = default;
         ServoConfig(uint8_t _ax12Id, const std::array<int32_t, MAX_SERVO_POSITIONS> &_positions, uint8_t _positionCount)
@@ -53,6 +53,10 @@ namespace ServoAX12
             size_t idx = static_cast<size_t>(index);
             if (idx < MAX_SERVO_POSITIONS)
             {
+                if (positionCount == 0 || positionCount > MAX_SERVO_POSITIONS)
+                {
+                    positionCount = 1;
+                }
                 positions[idx] = position;
                 if (positionCount <= idx)
                 {
@@ -114,16 +118,7 @@ namespace ServoAX12
     void InitServo(ServoMotion &servo);
     void AddServo(Hardware_Config::ServoID logicalId, String name, const ServoConfig &defaults);
 
-    //ServoMotion GetServoByName(const String &name);
     ServoMotion GetServoByNumber(uint8_t number);
-    //ServoMotion GetServoByID(Hardware_Config::ServoID logicalId);
-    //ServoMotion GetServoByIDNumber(uint8_t ax12Id);
-
-    void StopAllServo();
-    void StopServo(ServoMotion &servo);
-
-    void StartAllServo();
-    void StartServo(ServoMotion &servo);
 
     void UpdateServo(ServoMotion &servo);
 

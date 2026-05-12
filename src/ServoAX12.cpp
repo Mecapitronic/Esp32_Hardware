@@ -180,20 +180,7 @@ namespace ServoAX12
         Servos[logicalId] = ServoMotion(name, cfg);
         // Will be initialised in the Update Task
     }
-/*
-    ServoMotion GetServoByName(const String &name)
-    {
-        for (const auto &[servoKey, servo] : Servos)
-        {
-            if (servo.name == name)
-            {
-                return servo;
-            }
-        }
-        // printError("Servo with name " + name + " not found");
-        return ServoMotion(); // Return default ServoMotion
-    }
-*/
+
     ServoMotion GetServoByNumber(uint8_t number)
     {
         int i = 0;
@@ -207,62 +194,6 @@ namespace ServoAX12
         }
         // printError("Servo with number " + String(number) + " not found");
         return ServoMotion(); // Return default ServoMotion
-    }
-/*
-    ServoMotion GetServoByID(Hardware_Config::ServoID logicalId)
-    {
-        if (Servos.find(logicalId) != Servos.end())
-        {
-            return Servos.at(logicalId);
-        }
-        // printError("Servo with ID " + String((uint8_t)logicalId) + " not found");
-        return ServoMotion(); // Return default ServoMotion
-    }
-
-    ServoMotion GetServoByIDNumber(uint8_t ax12Id)
-    {
-        for (const auto &[sid, servo] : Servos)
-        {
-            if (servo.config.ax12Id == ax12Id)
-            {
-                return servo;
-            }
-        }
-        // printError("Servo with ID " + String(ax12Id) + " not found");
-        return ServoMotion(); // Return default ServoMotion
-    }*/
-
-    void StopAllServo()
-    {
-        println("Stop All Servo");
-        for (auto &[servoKey, servo] : Servos)
-        {
-            StopServo(servo);
-        }
-    }
-
-    void StopServo(ServoMotion &servo)
-    {
-        if (!simulation)
-        {
-            dxl.torqueOff(servo.config.ax12Id);
-            dxl.ledOff(servo.config.ax12Id);
-        }
-    }
-
-    void StartAllServo()
-    {
-        println("Start All Servo");
-        for (auto &[servoKey, servo] : Servos)
-        {
-            StartServo(servo);
-        }
-    }
-
-    void StartServo(ServoMotion &servo)
-    {
-        if (!simulation)
-            dxl.torqueOn(servo.config.ax12Id);
     }
 
     void UpdateServo(ServoMotion &servo)
