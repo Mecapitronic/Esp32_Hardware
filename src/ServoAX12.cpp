@@ -18,6 +18,27 @@ namespace ServoAX12
         TaskThread taskUpdateServo;
         std::unordered_map<Hardware_Config::ServoID, ServoMotion, std::hash<Hardware_Config::ServoID>> Servos;
 
+        struct ServoInitStep
+        {
+            ControlTableItem::ControlTableItemIndex item;
+            int32_t value;
+        };
+
+        // AX12 init sequence order, indexed by servo.initState
+        constexpr ServoInitStep kServoInitSteps[] = {
+            {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 0},
+            {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0},
+            {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023},
+            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 1023},
+            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 1023},
+            {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 32},
+            {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 32},
+            {ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 200},
+            {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 1},
+        };
+        constexpr uint8_t kServoInitStepCount =
+            sizeof(kServoInitSteps) / sizeof(kServoInitSteps[0]);
+
         // Charge la config d'un servo depuis les préférences NVS, avec des valeurs par défaut
         // Clés NVS : "srv.<name>.id", "srv.<name>.min", "srv.<name>.pos1", "srv.<name>.pos2", "srv.<name>.max"
         // Limite NVS : 15 chars max par clé → nom servo limité à 7 chars
@@ -155,61 +176,17 @@ namespace ServoAX12
         if (dxl.ping(servo.config.ax12Id))
         {
             int id = servo.config.ax12Id;
-            if (servo.initState == 0)
-                //  Turn off torque when configuring items in EEPROM area
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, id, 0))
-                    servo.initState++;
+            while (servo.initState < kServoInitStepCount)
+            {
+                const ServoInitStep &step = kServoInitSteps[servo.initState];
+                if (!WriteControlTableItem(step.item, id, step.value))
+                {
+                    break;
+                }
+                servo.initState++;
+            }
 
-            // Operating Mode : OP_POSITION
-            if (servo.initState == 1)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, id, 0))
-                    servo.initState++;
-            if (servo.initState == 2)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT,
-                        id,
-                        1023))
-                    servo.initState++;
-
-            // Limit Torque - Max : 1023
-            if (servo.initState == 3)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, id, 1023))
-                    servo.initState++;
-            if (servo.initState == 4)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::MAX_TORQUE, id, 1023))
-                    servo.initState++;
-
-            // Compliance Slope - Max : 32
-            if (servo.initState == 5)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE,
-                        id,
-                        32))
-                    servo.initState++;
-            if (servo.initState == 6)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE,
-                        id,
-                        32))
-                    servo.initState++;
-
-            // Limit Speed - Max : 1023 (0 = no limit)
-            if (servo.initState == 7)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::MOVING_SPEED, id, 200))
-                    servo.initState++;
-
-            //  Turn on torque at end of init
-            if (servo.initState == 8)
-                if (WriteControlTableItem(
-                        ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, id, 1))
-                    servo.initState++;
-
-            if (servo.initState == 9)
+            if (servo.initState == kServoInitStepCount)
             {
                 float presentPosition =
                     dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
