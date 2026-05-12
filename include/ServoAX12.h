@@ -83,8 +83,10 @@ namespace ServoAX12
         bool IsMoving = false;
         bool ledState = false;
         Timeout timeOut;
+        bool goalPositionAcked = false;
         // Tracking d'état d'initialisation
         bool initialized = false;       // Servo connecté et prêt
+        int initState = 0;
         uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
         int failureCount = 0;           // Compteur d'erreurs consécutives
 
@@ -129,6 +131,11 @@ namespace ServoAX12
     void SetServoPosition(Hardware_Config::ServoID logicalId, float position, int timeOutMs = 0);
 
     float GetServoPosition(Hardware_Config::ServoID logicalId);
+
+    bool WriteControlTableItem(ControlTableItem::ControlTableItemIndex item,
+                               uint8_t id,
+                               int32_t value,
+                               uint32_t timeout = 10);
 
     bool HandleCommand(Command cmd);
     void PrintCommandHelp();

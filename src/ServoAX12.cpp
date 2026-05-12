@@ -24,11 +24,18 @@ namespace ServoAX12
         ServoConfig LoadServoConfig(const String &name, const ServoConfig &defaults)
         {
             ServoConfig cfg = defaults;
-            cfg.ax12Id = (uint8_t)Preferences_Helper::LoadFromPreference("srv." + name + ".id", (int32_t)defaults.ax12Id);
-            cfg.positionCount = (uint8_t)Preferences_Helper::LoadFromPreference("srv." + name + ".cnt", (int32_t)defaults.positionCount);
+            uint8_t safeDefaultCount = defaults.positionCount;
+            if (safeDefaultCount == 0 || safeDefaultCount > MAX_SERVO_POSITIONS)
+            {
+                safeDefaultCount = 1;
+            }
+            cfg.ax12Id = (uint8_t)Preferences_Helper::LoadFromPreference(
+                "srv." + name + ".id", (int32_t)defaults.ax12Id);
+            cfg.positionCount = (uint8_t)Preferences_Helper::LoadFromPreference(
+                "srv." + name + ".cnt", (int32_t)safeDefaultCount);
             if (cfg.positionCount == 0 || cfg.positionCount > MAX_SERVO_POSITIONS)
             {
-                cfg.positionCount = defaults.positionCount;
+                cfg.positionCount = safeDefaultCount;
             }
             for (uint8_t i = 0; i < cfg.positionCount; ++i)
             {
@@ -129,46 +136,104 @@ namespace ServoAX12
             return;
         }
 
-        print("Init Servo ID : %i name : %s", servo.config.ax12Id, servo.name.c_str());
+        print("Init Servo ID : %i name : %s - Init State %d",
+              servo.config.ax12Id,
+              servo.name.c_str(),
+              servo.initState);
         if (simulation)
         {
             servo.position = servo.command_position = (float)servo.config.positions[0];
             servo.initialized = true;
             servo.failureCount = 0;
-            println("Servo %s %d position: %f [SIM]", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo %s %d position: %f [SIM]",
+                    servo.name,
+                    servo.config.ax12Id,
+                    servo.position);
             return;
         }
 
         if (dxl.ping(servo.config.ax12Id))
         {
-            PrintDxlInfo();
+            int id = servo.config.ax12Id;
+            if (servo.initState == 0)
+                //  Turn off torque when configuring items in EEPROM area
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, id, 0))
+                    servo.initState++;
 
-            servo.ledState = true;
-            dxl.ledOn(servo.config.ax12Id);
+            // Operating Mode : OP_POSITION
+            if (servo.initState == 1)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, id, 0))
+                    servo.initState++;
+            if (servo.initState == 2)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT,
+                        id,
+                        1023))
+                    servo.initState++;
 
-            // Turn off torque when configuring items in EEPROM area
-            dxl.torqueOff(servo.config.ax12Id);
-            dxl.setOperatingMode(servo.config.ax12Id, OP_POSITION);
-            dxl.torqueOn(servo.config.ax12Id);
+            // Limit Torque - Max : 1023
+            if (servo.initState == 3)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, id, 1023))
+                    servo.initState++;
+            if (servo.initState == 4)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::MAX_TORQUE, id, 1023))
+                    servo.initState++;
 
-            // sometimes : timeout at 100ms
-            float presentPosition = dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
-            if(presentPosition == 0.0f && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
+            // Compliance Slope - Max : 32
+            if (servo.initState == 5)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE,
+                        id,
+                        32))
+                    servo.initState++;
+            if (servo.initState == 6)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE,
+                        id,
+                        32))
+                    servo.initState++;
+
+            // Limit Speed - Max : 1023 (0 = no limit)
+            if (servo.initState == 7)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::MOVING_SPEED, id, 200))
+                    servo.initState++;
+
+            //  Turn on torque at end of init
+            if (servo.initState == 8)
+                if (WriteControlTableItem(
+                        ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, id, 1))
+                    servo.initState++;
+
+            if (servo.initState == 9)
             {
-                servo.failureCount++;
-            }
-            else
-            {
-                servo.position = servo.command_position = presentPosition;
-                servo.initialized = true;
-                servo.failureCount = 0;
-            }
+                float presentPosition =
+                    dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
+                if (presentPosition == 0.0f
+                    && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
+                {
+                    servo.failureCount++;
+                }
+                else
+                {
+                    servo.position = servo.command_position = presentPosition;
+                    servo.initialized = true;
+                    servo.failureCount = 0;
+                    servo.initState++;
 
-            println("Servo %s %d position: %f", servo.name, servo.config.ax12Id, servo.position);
+                    println("Servo %s %d position: %f - Init Done !",
+                            servo.name,
+                            servo.config.ax12Id,
+                            servo.position);
+                }
+            }
         }
         else
         {
-            servo.initialized = false;
             servo.failureCount++;
             println(" NOT connected! (attempt %d)", servo.failureCount);
         }
@@ -220,11 +285,11 @@ namespace ServoAX12
         {
             // sometimes : timeout at 100ms
             float position = dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
-            if(position == 0.0f && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
+            if (position == 0.0f && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
             {
                 servo.failureCount++;
             }
-            else            
+            else
                 servo.position = position;
         }
 
@@ -241,7 +306,19 @@ namespace ServoAX12
                     dxl.ledOn(servo.config.ax12Id);
             }
             servo.IsMoving = true;
-            dxl.setGoalPosition(servo.config.ax12Id, servo.command_position, UNIT_DEGREE);
+
+            if (!servo.goalPositionAcked)
+            {
+                if (!simulation)
+                    servo.goalPositionAcked = dxl.setGoalPosition(
+                        servo.config.ax12Id, servo.command_position, UNIT_DEGREE);
+                else
+                    servo.goalPositionAcked = true;
+                if (!servo.goalPositionAcked)
+                {
+                    servo.failureCount++;
+                }
+            }
         }
         else
         {
@@ -310,6 +387,7 @@ namespace ServoAX12
         }
         servo.command_position = position;
         servo.IsMoving = true;
+        servo.goalPositionAcked = false;
         if (timeOutMs > 0)
         {
             servo.timeOut.Start(timeOutMs);
@@ -319,8 +397,6 @@ namespace ServoAX12
             servo.timeOut.Stop();
         }
         // We set the command into the task, if power is enable
-        // if (!simulation)
-        //    dxl.setGoalPosition((uint8_t)logicalId, servo.command_position, UNIT_DEGREE);
     }
 
     float GetServoPosition(ServoID logicalId)
@@ -328,6 +404,27 @@ namespace ServoAX12
         if (!ServoExists(logicalId))
             return -1.0f;
         return Servos.at(logicalId).position;
+    }
+
+    bool WriteControlTableItem(ControlTableItem::ControlTableItemIndex item,
+                               uint8_t id,
+                               int32_t value,
+                               uint32_t timeout)
+    {
+        int retry = 0;
+        while (retry < 3)
+        {
+            println("WriteControlTableItem %d : %d for Servo ID %d (attempt %d)...",
+                    item,
+                    value,
+                    id,
+                    retry);
+            bool ret = dxl.writeControlTableItem(item, id, value, timeout);
+            if (ret)
+                return true;
+            retry++;
+        }
+        return false;
     }
 
     bool HandleCommand(Command cmd)
@@ -424,15 +521,31 @@ namespace ServoAX12
                 PrintAllPosition();
             }
         }
-        else if (cmd.cmdEquals("AX12Stop"))
+        else if (cmd.cmdEquals("AX12Table"))
         {
-            println("AX12Stop");
-            StopAllServo();
-        }
-        else if (cmd.cmdEquals("AX12Start"))
-        {
-            println("AX12Start");
-            StartAllServo();
+            // AX12Table:14
+            if (cmd.size >= 1)
+            {
+                for (const auto &[servoKey, servo] : Servos)
+                {
+                    println("Read Data %d : %d",
+                            cmd.data[0],
+                            dxl.readControlTableItem((uint8_t)cmd.data[0],
+                                                     (uint8_t)servo.config.ax12Id));
+                }
+            }
+            if (cmd.size >= 2)
+            {
+                for (const auto &[servoKey, servo] : Servos)
+                {
+                    println("Write Data %d : %d -> %d",
+                            cmd.data[0],
+                            cmd.data[1],
+                            dxl.writeControlTableItem((uint8_t)cmd.data[0],
+                                                      (uint8_t)servo.config.ax12Id,
+                                                      cmd.data[1]));
+                }
+            }
         }
         else
         {
@@ -597,6 +710,7 @@ namespace ServoAX12
                 {
                     servo.config.ax12Id = (uint8_t)value;
                     servo.initialized = false;
+                    servo.initState = 0;
                 }
                 else if (field == "cnt")
                 {
