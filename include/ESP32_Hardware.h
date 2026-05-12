@@ -24,16 +24,24 @@
 
 namespace Hardware
 {
-	/**
-	 * Initialize all hardware modules and start their internal tasks.
-	 */
-	void Initialisation();
-	
-	/**
-	 * Task function to periodically update hardware modules.
-	 * This should be run in a FreeRTOS task.
-	 */
-	void TaskUpdateHardware(void *pvParameters);
+    using CallbackFunction_t = void (*)();
+
+    /**
+     * Initialize all hardware modules and start their internal tasks.
+     */
+    void Initialisation(bool _useToF);
+
+    /**
+     * Register a callback called from the Hardware task loop.
+     * Can be used to run external I2C sensor updates in the same task context.
+     */
+    void SetExternalI2CUpdateCallback(CallbackFunction_t callback);
+
+    /**
+     * Task function to periodically update hardware modules.
+     * This should be run in a FreeRTOS task.
+     */
+    void TaskUpdateHardware(void *pvParameters);
 }
 
 #endif

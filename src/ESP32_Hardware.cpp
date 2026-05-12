@@ -8,18 +8,32 @@ namespace Hardware
     namespace
     {
         TaskThread taskUpdateHardware;
+        CallbackFunction_t externalI2CUpdateCallback = nullptr;
+
+        bool useToF = false;
+
+        Timeout externalI2CUpdateTimeout;
         Timeout powerUpdateTimeout;
         Timeout ihmUpdateTimeout;
         Timeout screenUpdateTimeout;
         Timeout tofUpdateTimeout;
 
-        constexpr uint32_t kPowerUpdatePeriodMs = 100;
-        constexpr uint32_t kIhmUpdatePeriodMs = 20;
-        constexpr uint32_t kScreenUpdatePeriodMs = 200;
+        constexpr uint32_t kExternalI2CUpdatePeriodMs = 5;
+        constexpr uint32_t kPowerUpdatePeriodMs = 500;
+        constexpr uint32_t kIhmUpdatePeriodMs = 50;
+        constexpr uint32_t kScreenUpdatePeriodMs = 500;
         constexpr uint32_t kTofUpdatePeriodMs = 500;
     }
-    void Initialisation()
+
+    void SetExternalI2CUpdateCallback(CallbackFunction_t callback)
     {
+        externalI2CUpdateCallback = callback;
+        externalI2CUpdateTimeout.Start(kExternalI2CUpdatePeriodMs);
+    }
+
+    void Initialisation(bool _useToF)
+    {
+        useToF = _useToF;
         println();
         println("-- Starting Hardware Initialisation --");
 
@@ -28,15 +42,17 @@ namespace Hardware
         Power::Initialisation();
         Screen::Initialisation();
         IHM::Initialisation();
-        // ToF disabled temporarily while validating random reset stability.
-        ToF_VL53L8CX::Initialisation();
+        if (useToF)
+            ToF_VL53L8CX::Initialisation();
 
+        externalI2CUpdateTimeout.Start(kExternalI2CUpdatePeriodMs);
         powerUpdateTimeout.Start(kPowerUpdatePeriodMs);
         ihmUpdateTimeout.Start(kIhmUpdatePeriodMs);
         screenUpdateTimeout.Start(kScreenUpdatePeriodMs);
         tofUpdateTimeout.Start(kTofUpdatePeriodMs);
 
-        taskUpdateHardware = TaskThread(TaskUpdateHardware, "TaskUpdateHardware", 20000, 10, 0);
+        taskUpdateHardware =
+            TaskThread(TaskUpdateHardware, "TaskUpdateHardware", 20000, 15, 0);
 
         Match::Initialisation();
         ESP32_Helper::RegisterCommandHandler("Match", Match::HandleCommand, Match::PrintCommandHelp);
@@ -52,12 +68,19 @@ namespace Hardware
     void TaskUpdateHardware(void *pvParameters)
     {
         println("Start Task Update Hardware");
-        Chrono chrono("Hardware", 1000);
+        Chrono chrono("Hardware", 5000);
         while (true)
         {
             chrono.Start();
             try
             {
+                if (externalI2CUpdateCallback != nullptr
+                    && externalI2CUpdateTimeout.IsTimeOut())
+                {
+                    externalI2CUpdateCallback();
+                    externalI2CUpdateTimeout.Start(kExternalI2CUpdatePeriodMs);
+                }
+
                 if (powerUpdateTimeout.IsTimeOut())
                 {
                     Power::Update();
@@ -76,7 +99,7 @@ namespace Hardware
                     screenUpdateTimeout.Start(kScreenUpdatePeriodMs);
                 }
 
-                if (tofUpdateTimeout.IsTimeOut())
+                if (useToF && tofUpdateTimeout.IsTimeOut())
                 {
                     ToF_VL53L8CX::Update();
                     tofUpdateTimeout.Start(kTofUpdatePeriodMs);
@@ -90,7 +113,8 @@ namespace Hardware
             {
                 printChrono(chrono);
             }
-            vTaskDelay(10);
+            // Keep loop latency low so external I2C callback can run at 5 ms cadence.
+            vTaskDelay(1);
         }
         println("Hardware Update Task STOPPED !");
     }
