@@ -9,9 +9,9 @@ void setup(void)
     Hardware::Initialisation();
     Power::EnablePower();
 
-    ServoConfig testConfig = ServoConfig((uint8_t)ServoID::VL53,
+    ServoConfig testConfig = ServoConfig((uint8_t)ServoID::Test,
         std::array<int32_t, MAX_SERVO_POSITIONS>{0, 145, 290}, 3);
-    AddServo(ServoID::VL53, "Test", testConfig);
+    AddServo(ServoID::Test, "Test", testConfig);
 }
 
 void loop(void)
@@ -24,8 +24,8 @@ void loop(void)
         println("");
     */
     /*
-    SetServoPosition(ServoID::VL53, 0.0f);
-    while (IsServoMoving(ServoID::VL53))
+    SetServoPosition(ServoID::Test, 0.0f);
+    while (IsServoMoving(ServoID::Test))
     {
         TeleplotAllPosition();
         vTaskDelay(100);

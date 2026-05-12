@@ -1,0 +1,5 @@
+[submodule "lib/Dynamixel2Arduino"]
+	path = lib/Dynamixel2Arduino
+	url = https://github.com/Mecapitronic/Dynamixel2Arduino.git
+	branch = master
+	ignore = dirty
