@@ -5,7 +5,7 @@ using namespace Hardware_Config;
 namespace IHM
 {
     // Global variable definitions
-    Team team = Team::None;
+    Team team = Team::Jaune;
     int tirettePresent = -1;
     int switchMode = -1;
     int bauReady = -1;
