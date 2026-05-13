@@ -19,6 +19,8 @@ namespace ToF_VL53L8CX
     uint8_t getImageResolution();
     bool isError();
 
+    bool IsTargetPresent();
+
     // Utility functions
     void printProcessing();
     void printFormattedOutput();

@@ -15,6 +15,9 @@ namespace ToF_VL53L8CX
         long measurements = 0;           // Used to calculate actual output rate
         long measurementStartTime = 0;   // Used to calculate actual output rate
 
+        bool target_present = false;
+        int targetDistance = 500;
+
         // Helper functions for sending binary arrays
         void sendInt16Array(int16_t *data, size_t len)
         {
@@ -136,6 +139,24 @@ namespace ToF_VL53L8CX
                 {
                     errorStatus = sensor.get_ranging_data(&sensorData); // Read distance data
                     newDataReady = 0;
+
+                    String result = "Tof:";
+                    
+                    bool found = false;
+                    for (size_t i = 0; i < 8; i++)
+                    {
+                        result+= " " + String(sensorData.distance_mm[i]);
+                        if (sensorData.distance_mm[i] < targetDistance)
+                        {
+                            target_present = true;
+                            found = true;
+                        }                        
+                    }
+                    if(!found)
+                    {
+                        target_present = false;
+                    }
+                    println(result);
                 }
             }
             else
@@ -172,6 +193,11 @@ namespace ToF_VL53L8CX
     bool isError()
     {
         return errorStatus;
+    }
+    
+    bool IsTargetPresent()
+    {
+        return target_present;
     }
 
     void printProcessing()
