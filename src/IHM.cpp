@@ -18,7 +18,7 @@ namespace IHM
 
         CLEDController *builtInLEDController = nullptr;
         CRGB builtin_led;
-        constexpr int stripLEDCount = 9;
+        constexpr int stripLEDCount = 10;
         constexpr uint8_t teamLedIndex = 0;
         constexpr uint8_t modeLedIndex = stripLEDCount - 1;
         CLEDController *stripLEDController = nullptr;

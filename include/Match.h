@@ -20,8 +20,8 @@ namespace Match
     };
 
     // Time in ms
-    static constexpr int time_start_match = 0;
-    static constexpr int time_end_match = time_start_match + 100000;
+    static constexpr int time_start_match = 85000;
+    static constexpr int time_end_match = 100000;
 
     // Get the current state of the match
     extern State matchState;

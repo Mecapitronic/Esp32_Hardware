@@ -16,7 +16,7 @@ namespace ToF_VL53L8CX
         long measurementStartTime = 0;   // Used to calculate actual output rate
 
         bool target_present = false;
-        int targetDistance = 500;
+        int targetDistance = 300;
 
         // Helper functions for sending binary arrays
         void sendInt16Array(int16_t *data, size_t len)
@@ -111,7 +111,7 @@ namespace ToF_VL53L8CX
             {
                 sensorData.distance_mm[i] = 500; // 500mm default distance
                 // sensorData.ambient_per_spad[i] = 100;
-                sensorData.nb_target_detected[i] = 1;
+                // sensorData.nb_target_detected[i] = 1;
                 // sensorData.nb_spads_enabled[i] = 16;
                 // sensorData.signal_per_spad[i] = 1000;
                 // sensorData.range_sigma_mm[i] = 100;
@@ -140,23 +140,26 @@ namespace ToF_VL53L8CX
                     errorStatus = sensor.get_ranging_data(&sensorData); // Read distance data
                     newDataReady = 0;
 
-                    String result = "Tof:";
-                    
+                    String resultDistance = "Tof:";
+                    String resultStatus = "Status:";
                     bool found = false;
                     for (size_t i = 0; i < 8; i++)
                     {
-                        result+= " " + String(sensorData.distance_mm[i]);
-                        if (sensorData.distance_mm[i] < targetDistance)
+                        resultDistance += " " + String(sensorData.distance_mm[i]);
+                        resultStatus += " " + String(sensorData.target_status[i]);
+                         // Check if distance is below threshold and status is valid
+                        if (sensorData.distance_mm[i] < targetDistance && sensorData.target_status[i] == 5)
                         {
                             target_present = true;
                             found = true;
-                        }                        
+                        }
                     }
                     if(!found)
                     {
                         target_present = false;
                     }
-                    println(result);
+                    println(resultDistance);
+                    println(resultStatus);
                 }
             }
             else
@@ -205,8 +208,8 @@ namespace ToF_VL53L8CX
         // Serial.print("VL53amb");
         // sendUint32Array(sensorData.ambient_per_spad, 64);
 
-        Serial.print("VL53tar");
-        Serial.write(sensorData.nb_target_detected, 64);
+        //Serial.print("VL53tar");
+        //Serial.write(sensorData.nb_target_detected, 64);
 
         // Serial.print("VL53spa");
         // sendUint32Array(sensorData.nb_spads_enabled, 64);

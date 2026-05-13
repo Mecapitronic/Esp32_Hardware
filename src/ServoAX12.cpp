@@ -29,10 +29,10 @@ namespace ServoAX12
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 0},
             {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0},
             {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023},
-            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 1023},
-            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 1023},
-            {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 32},
-            {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 32},
+            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 200},
+            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200},
+            {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 8},
+            {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 8},
             {ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 200},
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 1},
         };
@@ -152,7 +152,7 @@ namespace ServoAX12
 
     void InitServo(ServoMotion &servo)
     {
-        if (servo.initialized || !Power::isPowerON())
+        if (servo.initialized || Power::isLowVoltage())
         {
             return;
         }
@@ -197,15 +197,16 @@ namespace ServoAX12
                 }
                 else
                 {
-                    servo.position = servo.command_position = presentPosition;
+
+                    println("Servo %s %d at position: %f go to %f - Init Done !",
+                            servo.name,
+                            servo.config.ax12Id,
+                            servo.position,
+                            (float)servo.config.positions[0]);
+                    servo.position = servo.command_position = (float)servo.config.positions[0];
                     servo.initialized = true;
                     servo.failureCount = 0;
                     servo.initState++;
-
-                    println("Servo %s %d position: %f - Init Done !",
-                            servo.name,
-                            servo.config.ax12Id,
-                            servo.position);
                 }
             }
         }
@@ -247,7 +248,7 @@ namespace ServoAX12
         }
 
         // Vérifier la tension avant de faire une opération I2C
-        if (!Power::isPowerON()) // seuil de fonctionnement des AX12
+        if (Power::isLowVoltage() || !IHM::bauReady)
         {
             // servo.IsMoving = false;
             return;
@@ -362,6 +363,10 @@ namespace ServoAX12
             println("Max : %f", maxPos);
             return;
         }
+        else
+        {
+            println("Set position %f for Servo ID : %i", position, logicalId);
+        }
         servo.command_position = position;
         servo.IsMoving = true;
         servo.goalPositionAcked = false;
@@ -373,7 +378,7 @@ namespace ServoAX12
         {
             servo.timeOut.Stop();
         }
-        // We set the command into the task, if power is enable
+        // We set the command into the task, if power is not too low
     }
 
     float GetServoPosition(ServoID logicalId)
@@ -433,7 +438,13 @@ namespace ServoAX12
         {
             // AX12Config:<name>:<field>:<value>
             // field: id | cnt | p0..p9
-            // AX12Config:VL53:p3:180
+            // AX12Config:VL53:p1:180
+            // AX12Config:VL53:id:3
+            // AX12Config:Bras:id:17
+
+            // AX12Config:VL53:id:6
+            // AX12Config:Bras:id:15
+
             if (cmd.size == 1 && strlen(cmd.dataStr1) > 0 && strlen(cmd.dataStr2) > 0)
             {
                 String name(cmd.dataStr1);
@@ -473,7 +484,8 @@ namespace ServoAX12
         {
             if (cmd.size == 2)
             {
-                // AX12Pos:1:100
+                // AX12Pos:1:180
+                // AX12Pos:2:160
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
                 print("AX12 Servo id: %i ", logicalId);
                 float position = static_cast<float>(cmd.data[1]);
