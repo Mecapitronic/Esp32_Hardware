@@ -17,6 +17,7 @@ namespace ToF_VL53L8CX
 
         bool target_present = false;
         int targetDistance = 300;
+        int16_t firstLineDistances[8] = {0,0,0,0,0,0,0,0};
 
         // Helper functions for sending binary arrays
         void sendInt16Array(int16_t *data, size_t len)
@@ -141,25 +142,34 @@ namespace ToF_VL53L8CX
                     newDataReady = 0;
 
                     String resultDistance = "Tof:";
-                    String resultStatus = "Status:";
-                    bool found = false;
+                    int found = 0;
                     for (size_t i = 0; i < 8; i++)
                     {
-                        resultDistance += " " + String(sensorData.distance_mm[i]);
-                        resultStatus += " " + String(sensorData.target_status[i]);
                          // Check if distance is below threshold and status is valid
                         if (sensorData.distance_mm[i] < targetDistance && sensorData.target_status[i] == 5)
                         {
-                            target_present = true;
-                            found = true;
+                            found++;
                         }
+                        if(sensorData.target_status[i] == 5)
+                        {
+                            firstLineDistances[i] = sensorData.distance_mm[i];
+                        }
+                        else
+                        {
+                            firstLineDistances[i] = 0;
+                        }                        
+                        resultDistance += " " + String(firstLineDistances[i]);
                     }
-                    if(!found)
+                    if(found > 5)
+                    {
+                        target_present = true;
+                    }
+                    else
                     {
                         target_present = false;
                     }
+
                     println(resultDistance);
-                    println(resultStatus);
                 }
             }
             else
@@ -167,8 +177,8 @@ namespace ToF_VL53L8CX
                 // Simulate data by slightly varying distance values
                 for (int i = 0; i < 64; i++)
                 {
-                    sensorData.distance_mm[i] += random(-10, 10);
-                }
+                    sensorData.distance_mm[i] += random(-10, 10);                }
+                        
             }
         }
         catch (const std::exception &e)
@@ -201,6 +211,15 @@ namespace ToF_VL53L8CX
     bool IsTargetPresent()
     {
         return target_present;
+    }
+
+    int16_t GetFirstLineDistance(int index)
+    {
+        if(index < 0 || index >= sizeof(firstLineDistances)/sizeof(firstLineDistances[0]))
+        {
+            return 0;
+        }
+        return firstLineDistances[index];
     }
 
     void printProcessing()

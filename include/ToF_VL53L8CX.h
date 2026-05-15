@@ -20,6 +20,7 @@ namespace ToF_VL53L8CX
     bool isError();
 
     bool IsTargetPresent();
+    int16_t GetFirstLineDistance(int index);
 
     // Utility functions
     void printProcessing();
