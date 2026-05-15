@@ -29,6 +29,7 @@ namespace Screen
     void Logo(void);
     void Update();
     void SetPose(const Pose newPose);
+    void SetTarget(const Pose newTarget);
 
 } // namespace Screen
 

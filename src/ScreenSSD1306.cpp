@@ -36,13 +36,16 @@ namespace Screen
         Element elementBlankLine2{2, 0, "                     ", ""};
 
         Element elementPosX{3, 0, "X  123", ""};
+        Element elementPosTargetX{3, 6, "X  123", ""};
         Element elementAx12Title{3, 16, "AX12", ""};
 
         Element elementPosY{4, 0, "Y  456", ""};
-        Element elementServo1{4, 11, "Srv1:111", ""};
+        Element elementPosTargetY{4, 6, "Y  123", ""};
+        Element elementServo1{4, 13, "Srv1:111", ""};
 
         Element elementPosA{5, 0, "A  789", ""};
-        Element elementServo2{5, 11, "Srv2:222", ""};
+        Element elementPosTargetA{5, 6, "A  123", ""};
+        Element elementServo2{5, 13, "Srv2:222", ""};
 
         Element elementBlankLine6{6, 0, "                     ", ""};
 
@@ -103,10 +106,13 @@ namespace Screen
             elementBlankLine2.oldText = "";
             elementLowBattery.oldText = "";
             elementPosX.oldText = "";
+            elementPosTargetX.oldText = "";
             elementAx12Title.oldText = "";
             elementPosY.oldText = "";
+            elementPosTargetY.oldText = "";
             elementServo1.oldText = "";
             elementPosA.oldText = "";
+            elementPosTargetA.oldText = "";
             elementServo2.oldText = "";
             elementBlankLine6.oldText = "";
             elementBattery.oldText = "";
@@ -225,7 +231,7 @@ namespace Screen
                 {
                     return String(servo.name) + ": ?";
                 }
-                return String(servo.name) + ":" + String(servo.position, 1);
+                return String(servo.name) + ":" + String(servo.position, 0);
             }
             else
             {
@@ -273,8 +279,26 @@ namespace Screen
 
         String PoseAToText()
         {
-            return "A " + String(pose.h);
+            return "A " + String(degrees(pose.h),0);
         }
+
+        Pose target = {0, 0, 0};
+        String TargetXToText()
+        {
+            return "X " + String(target.x);
+        }
+
+        String TargetYToText()
+        {
+            return "Y " + String(target.y);
+        }
+
+        String TargetAToText()
+        {
+            return "A " + String(degrees(target.h),0);
+        }
+
+
     } // namespace
 
     void Initialisation(void)
@@ -309,7 +333,7 @@ namespace Screen
 
     void Logo(void)
     {
-        Element logo{2, 0, "     PAMI START", ""};
+        Element logo{2, 0, "    ROBOT START", ""};
         write_element(logo);
     }
 
@@ -333,6 +357,10 @@ namespace Screen
             elementPosY.text = PoseYToText();
             elementPosA.text = PoseAToText();
 
+            elementPosTargetX.text = TargetXToText();
+            elementPosTargetY.text = TargetYToText();
+            elementPosTargetA.text = TargetAToText();
+
             elementServo1.text = ServoToText(0);
             elementServo2.text = ServoToText(1);
             write_element(elementMode);
@@ -347,12 +375,15 @@ namespace Screen
             write_element(elementBlankLine2);
 
             write_element(elementPosX);
+            write_element(elementPosTargetX);
             write_element(elementAx12Title);
 
             write_element(elementPosY);
+            write_element(elementPosTargetY);
             write_element(elementServo1);
 
             write_element(elementPosA);
+            write_element(elementPosTargetA);
             write_element(elementServo2);
 
             write_element(elementBlankLine6);
@@ -369,6 +400,11 @@ namespace Screen
     void SetPose(const Pose newPose)
     {
         pose = newPose;
+    }
+
+    void SetTarget(const Pose newTarget)
+    {
+        target = newTarget;
     }
 
 } // namespace Screen
