@@ -24,7 +24,7 @@ namespace Hardware
         constexpr uint32_t kIhmUpdatePeriodMs = 5;
         constexpr uint32_t kLedUpdatePeriodMs = 200;
         constexpr uint32_t kScreenUpdatePeriodMs = 500;
-        constexpr uint32_t kTofUpdatePeriodMs = 500;
+        constexpr uint32_t kTofUpdatePeriodMs = 200;
     }
 
     void SetExternalI2CUpdateCallback(CallbackFunction_t callback)
