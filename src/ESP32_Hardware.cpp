@@ -15,12 +15,14 @@ namespace Hardware
         Timeout externalI2CUpdateTimeout;
         Timeout powerUpdateTimeout;
         Timeout ihmUpdateTimeout;
+        Timeout ledUpdateTimeout;
         Timeout screenUpdateTimeout;
         Timeout tofUpdateTimeout;
 
         constexpr uint32_t kExternalI2CUpdatePeriodMs = 5;
         constexpr uint32_t kPowerUpdatePeriodMs = 500;
-        constexpr uint32_t kIhmUpdatePeriodMs = 50;
+        constexpr uint32_t kIhmUpdatePeriodMs = 5;
+        constexpr uint32_t kLedUpdatePeriodMs = 200;
         constexpr uint32_t kScreenUpdatePeriodMs = 500;
         constexpr uint32_t kTofUpdatePeriodMs = 500;
     }
@@ -90,6 +92,12 @@ namespace Hardware
                 {
                     IHM::Update();
                     ihmUpdateTimeout.Start(kIhmUpdatePeriodMs);
+                }
+
+                if(ledUpdateTimeout.IsTimeOut())
+                {
+                    IHM::ShowLed();
+                    ledUpdateTimeout.Start(kLedUpdatePeriodMs);
                 }
 
                 if (screenUpdateTimeout.IsTimeOut())

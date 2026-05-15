@@ -9,7 +9,6 @@ namespace IHM
     int tirettePresent = -1;
     int switchMode = -1;
     int bauReady = -1;
-    bool useBlink = true;
 
     namespace
     {
@@ -45,12 +44,10 @@ namespace IHM
         if (tirettePresent == 1)
         {
             println("Tirette : Présente au démarrage");
-            ledTimeOut.timeOut = 500;
         }
-        else if (tirettePresent == 0)
+        else
         {
             println("Tirette : Absente au démarrage");
-            ledTimeOut.timeOut = 500;
         }
 
         builtInLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
@@ -111,7 +108,7 @@ namespace IHM
         }
     }
 
-    void Blink()
+    void ShowLed()
     {
         CRGB teamColor = CRGB::Black;
         if (team == Team::Jaune)
@@ -123,7 +120,6 @@ namespace IHM
             teamColor = CRGB::Blue;
         }
 
-        // no blink behavior
         if (!bauReady)
         {
             builtin_led = CRGB::Red;
@@ -133,25 +129,22 @@ namespace IHM
         {
             builtin_led = teamColor;
             fill_solid(strip_led, stripLEDCount, CRGB::Black);
+            renderStatusIndicators();
         }
 
-        if (useBlink)
+        if (ledTimeOut.IsTimeOut())
         {
-            if (ledTimeOut.IsTimeOut())
-            {
-                ledState = !ledState;
-            }
-
-            if (ledState)
-            {
-                builtin_led = teamColor;
-            }
-            else
-            {
-                builtin_led = bauReady ? CRGB::Black : CRGB::Red;
-            }
+            ledState = !ledState;
         }
-        renderStatusIndicators();
+        if (ledState)
+        {
+            builtin_led = teamColor;
+        }
+        else
+        {
+            builtin_led = bauReady ? CRGB::Black : CRGB::Red;
+        }
+    
         if (builtInLEDController != nullptr)
             builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
         if (stripLEDController != nullptr)
@@ -161,17 +154,35 @@ namespace IHM
     void renderStatusIndicators()
     {
         const CRGB teamColor = (IHM::team == IHM::Team::Jaune) ? CRGB::Gold : ((IHM::team == IHM::Team::Bleu) ? CRGB::DodgerBlue : CRGB::White);
+        const CRGB teamInverseColor = (IHM::team == IHM::Team::Jaune) ? CRGB::DodgerBlue : ((IHM::team == IHM::Team::Bleu) ? CRGB::Gold : CRGB::White);
         const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::Green : ((IHM::switchMode == 0) ? CRGB::Violet: CRGB::White);
 
-        int numPami = Match::GetNumPami();
-        if(numPami>0 && numPami <= stripLEDCount - 2)
+        if (Match::matchState == Match::State::MATCH_BOOT || Match::matchState == Match::State::MATCH_WAIT)
         {
-            int startIndex = 5 - numPami/2;
-            for (size_t i = startIndex; i < numPami+startIndex; i++)
-            {
-                strip_led[i] = CRGB::White;
+            int numPami = Match::GetNumPami();
+            if(numPami>0 && numPami <= stripLEDCount - 2)
+            {            int startIndex = 5 - numPami/2;
+                for (size_t i = startIndex; i < numPami+startIndex; i++)
+                {
+                    strip_led[i] = CRGB::White;
+                }
             }
-        }        
+        }
+        else
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                int dist = ToF_VL53L8CX::GetFirstLineDistance(i);
+                if(dist <= 0 || dist >= 300)
+                {
+                    strip_led[8-i] = CRGB::Black;
+                }
+                else
+                {
+                    strip_led[8-i] = teamInverseColor;
+                }
+            }
+        }
 
         strip_led[teamLedIndex] = teamColor;
         strip_led[modeLedIndex] = modeColor;

@@ -30,12 +30,10 @@ namespace IHM
     //  Retiré (OK) = 1, Enclenché (NOK) = 0, None = -1
     extern int bauReady;
 
-    extern bool useBlink;
-
     void Initialisation();
     void Update();
 
-    void Blink();
+    void ShowLed();
     void renderStatusIndicators();
 
     void PrintAll();

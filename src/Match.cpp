@@ -173,7 +173,6 @@ namespace Match
                 {
                     // Disable Motor & Servo Power
                     Power::DisablePower();
-                    IHM::useBlink = false;
                 }
             }
             catch (std::exception const &e)
