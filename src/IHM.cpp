@@ -100,7 +100,6 @@ namespace IHM
                 bauReady = bauTmp;
                 PrintBAU();
             }
-            Blink();
         }
         catch (const std::exception &e)
         {
