@@ -50,6 +50,7 @@ namespace Hardware
         externalI2CUpdateTimeout.Start(kExternalI2CUpdatePeriodMs);
         powerUpdateTimeout.Start(kPowerUpdatePeriodMs);
         ihmUpdateTimeout.Start(kIhmUpdatePeriodMs);
+        ledUpdateTimeout.Start(kLedUpdatePeriodMs);
         screenUpdateTimeout.Start(kScreenUpdatePeriodMs);
         tofUpdateTimeout.Start(kTofUpdatePeriodMs);
 
