@@ -10,10 +10,72 @@ namespace IHM
     int switchMode = -1;
     int bauReady = -1;
 
+    // Structure pour gérer l'antirebond des boutons
+    struct ButtonDebounce
+    {
+        String name = "";
+        String stateName[2] = {"", ""};
+        int pin = -1;               // Numéro du pin associé au bouton
+        bool inverse = false;          // Indique si le bouton est inversé (actif à LOW)
+        int rawState = -1;          // État brut lu du pin
+        int debouncedState = -1;    // État après antirebond
+        Timeout debounceTimer;      // Timer pour l'antirebond
+        static constexpr int DEBOUNCE_TIME_MS = 20;  // Temps d'antirebond en ms
+        
+        ButtonDebounce() = default;
+
+        ButtonDebounce(String _name, int _pin, String state0, String state1, bool _inverse = false) : name(_name), pin(_pin), inverse(_inverse) {
+            stateName[0] = state0;
+            stateName[1] = state1;
+            // Initialisation de l'état brut du bouton
+            rawState = digitalRead(pin);
+            if (inverse)
+            {
+                rawState = !rawState;
+            }
+            debouncedState = rawState;
+            PrintState();
+        }
+        
+        void Update()
+        {
+            int pinState = digitalRead(pin);
+            if (inverse)
+            {
+                pinState = !pinState;
+            }
+            // Si l'état brut change
+            if (pinState != rawState)
+            {
+                rawState = pinState;
+                debounceTimer.Start(DEBOUNCE_TIME_MS);
+            }
+            
+            // Si le timer d'antirebond s'écoule, valider le nouvel état
+            if (debounceTimer.IsTimeOut())
+            {
+                debouncedState = rawState;
+                debounceTimer.Stop();
+                PrintState();
+            }
+        }
+
+        void PrintState() const
+        {
+            println("Bouton %s : %s", name.c_str(), stateName[debouncedState].c_str());
+        }
+    };
+
     namespace
     {
         int ledState = LOW;
         Timeout ledTimeOut;
+
+        // Antirebond pour les 4 boutons
+        ButtonDebounce teamButtonDebounce;
+        ButtonDebounce switchButtonDebounce;
+        ButtonDebounce startButtonDebounce;
+        ButtonDebounce bauButtonDebounce;
 
         CLEDController *builtInLEDController = nullptr;
         CRGB builtin_led;
@@ -40,7 +102,17 @@ namespace IHM
 
         ledTimeOut.Start(1000);
 
-        tirettePresent = !digitalRead(Hardware_Config::PIN_START);
+        teamButtonDebounce = ButtonDebounce("Team", Hardware_Config::PIN_TEAM, "Jaune", "Bleu");
+        switchButtonDebounce = ButtonDebounce("Mode", Hardware_Config::PIN_SWITCH, "TEST", "MATCH");
+        startButtonDebounce = ButtonDebounce("Start", Hardware_Config::PIN_START, "Absente", "Présente", true);
+        bauButtonDebounce = ButtonDebounce("BAU", Hardware_Config::PIN_BAU, "Enclenché", "Retiré");
+
+        // Initialisation des variables globales
+        team = (Team)teamButtonDebounce.debouncedState;
+        switchMode = switchButtonDebounce.debouncedState;
+        tirettePresent = startButtonDebounce.debouncedState;
+        bauReady = bauButtonDebounce.debouncedState;
+
         if (tirettePresent == 1)
         {
             println("Tirette : Présente au démarrage");
@@ -69,38 +141,23 @@ namespace IHM
     {
         try
         {
-            // Lecture du bouton Team Yellow / Blue
-            Team teamTmp = (Team)digitalRead(Hardware_Config::PIN_TEAM);
-            if (teamTmp != team)
-            {
-                team = teamTmp;
-                PrintTeam();
-            }
+            // Antirebond du bouton Team Yellow / Blue
+            teamButtonDebounce.Update();
+            
+            // Antirebond du bouton Switch TEST / OK
+            switchButtonDebounce.Update();
+            
+            // Antirebond de la tirette
+            startButtonDebounce.Update();
+            
+            // Antirebond du BAU
+            bauButtonDebounce.Update();
 
-            // Lecture du bouton Switch TEST / OK
-            int switchTmp = digitalRead(Hardware_Config::PIN_SWITCH);
-            if (switchTmp != switchMode)
-            {
-                switchMode = switchTmp;
-                PrintSwitch();
-            }
-
-            // Lecture de la tirette
-            int tiretteTmp = !digitalRead(Hardware_Config::PIN_START);
-            if (tiretteTmp != tirettePresent)
-            {
-                tirettePresent = tiretteTmp;
-                PrintStart();
-            }
-
-            // Lecture du BAU
-            int bauTmp = digitalRead(Hardware_Config::PIN_BAU);
-            if (bauTmp != bauReady)
-            {
-                bauReady = bauTmp;
-                PrintBAU();
-            }
-            Blink();
+            // Mise à jour des variables globales avec les états debounced
+            team = (Team)teamButtonDebounce.debouncedState;
+            switchMode = switchButtonDebounce.debouncedState;
+            tirettePresent = startButtonDebounce.debouncedState;
+            bauReady = bauButtonDebounce.debouncedState;
         }
         catch (const std::exception &e)
         {
