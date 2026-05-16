@@ -122,10 +122,14 @@ namespace ServoAX12
 
     ServoMotion GetServoByNumber(uint8_t number);
 
-    void UpdateServo(ServoMotion &servo);
+    void UpdateServo(ServoMotion &servo);    
+    bool IsServoInPosition(Hardware_Config::ServoID _logicalId, float _position, float tolerance = 5.0f);
 
     bool AreAllServoMoving();
     bool IsServoMoving(Hardware_Config::ServoID logicalId);
+    
+    void WaitAllServo();
+    void WaitServo(Hardware_Config::ServoID logicalId);
 
     void SetServoPosition(Hardware_Config::ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs = 0);
     void SetServoPosition(Hardware_Config::ServoID logicalId, float position, int timeOutMs = 0);
@@ -139,6 +143,13 @@ namespace ServoAX12
 
     bool HandleCommand(Command cmd);
     void PrintCommandHelp();
+
+    void Depose();
+    void Prise();
+    void Retourne();
+    void Repli();
+    void RepliHaut();
+    void PrePrise();
 
     int16_t Scan();
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);

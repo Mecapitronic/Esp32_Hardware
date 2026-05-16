@@ -231,7 +231,7 @@ namespace Screen
                 {
                     return String(servo.name) + ": ?";
                 }
-                return String(servo.name) + ":" + String(servo.position, 0);
+                return String(servo.name) + ":" + String(servo.position, 0) + (servo.IsMoving ? "M" : servo.timeOut.IsTimeOut() ? "T" : " ");
             }
             else
             {

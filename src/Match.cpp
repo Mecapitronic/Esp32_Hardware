@@ -67,7 +67,7 @@ namespace Match
 
     void CheckEndOfMatch()
     {
-        if ((matchState == State::MATCH_RUN) || (matchState == State::MATCH_STOP) && IHM::switchMode == 1)
+        if ((matchState == State::MATCH_RUN) || (matchState == State::MATCH_STOP)/* && IHM::switchMode == 1*/)
         {
             // robot still running or waiting for end of match
             elapsedTime = millis() - startTime;
@@ -75,11 +75,11 @@ namespace Match
             {
                 matchState = State::MATCH_END;
             }
-        }
+        }/*
         if(matchState == State::MATCH_STOP && IHM::switchMode == 0 && IHM::tirettePresent == 1)
         {
             matchState = State::MATCH_END;
-        }
+        }*/
     }
 
     void printMatch()
@@ -118,7 +118,7 @@ namespace Match
                 // Tirette présente, en attente de retrait de la tirette pour démarrer le match
                 if (Match::matchState == State::MATCH_WAIT)
                 {
-                    Power::EnablePower();
+                    //Power::EnablePower();
 
                     if (IHM::tirettePresent == 0)
                     {
@@ -131,34 +131,8 @@ namespace Match
                 // Match en cours
                 if (Match::matchState == State::MATCH_RUN)
                 {
-                    Power::EnablePower();
-                    //println("Start of Match !");
-                    /*
-                    int lastMatchTime = 0;
-                    while(Match::getMatchTimeMs() < Match::time_start_match &&
-                    IHM::switchMode == 1)
-                    {
-                      // Countdown to start
-                      if (lastMatchTime != (int)(Match::getMatchTimeSec()))
-                      {
-                          println("Match Time : %i", (int)(Match::getMatchTimeSec()));
-                          lastMatchTime = (int)(Match::getMatchTimeSec());
-                      }
-                      vTaskDelay(1);
-                    }*/
-/*
-                    if (IHM::switchMode == 1)
-                    {
-                        println("Mode Match !");
-                    }
-                    else
-                    {
-                        println("Mode Test !");
-                    }*/
-
+                    //Power::EnablePower();
                     CheckEndOfMatch();
-                    // Fin des actions
-                    //Match::matchState = State::MATCH_STOP;
                 }
 
                 // Arrêt des actions, en attente de la fin du timer pour terminer le match

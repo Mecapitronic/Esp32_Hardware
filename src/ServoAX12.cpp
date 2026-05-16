@@ -24,16 +24,17 @@ namespace ServoAX12
             int32_t value;
         };
 
+        // https://emanual.robotis.com/docs/en/dxl/ax/ax-12a/#control-table-data-address
         // AX12 init sequence order, indexed by servo.initState
         constexpr ServoInitStep kServoInitSteps[] = {
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 0},
-            {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0},
-            {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023},
-            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 200},
-            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200},
-            {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 8},
-            {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 8},
-            {ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 200},
+            {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0},           // 0
+            {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023},       // 1023
+            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 800},             // max = 1023
+            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 800},           // initial value = MAX_TORQUE
+            {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 32},     // 32 max
+            {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 32},    // 32 max
+            {ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 512},           // min = 1 to max = 1023, 0 is max speed
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 1},
         };
         constexpr uint8_t kServoInitStepCount =
@@ -167,7 +168,7 @@ namespace ServoAX12
             servo.initialized = true;
             servo.failureCount = 0;
             println("Servo %s %d position: %f [SIM]",
-                    servo.name,
+                    servo.name.c_str(),
                     servo.config.ax12Id,
                     servo.position);
             return;
@@ -199,7 +200,7 @@ namespace ServoAX12
                 {
 
                     println("Servo %s %d at position: %f go to %f - Init Done !",
-                            servo.name,
+                            servo.name.c_str(),
                             servo.config.ax12Id,
                             servo.position,
                             (float)servo.config.positions[0]);
@@ -219,8 +220,8 @@ namespace ServoAX12
 
     void AddServo(ServoID logicalId, String name, const ServoConfig &defaults)
     {
-        ServoConfig cfg = LoadServoConfig(name, defaults);
-        Servos[logicalId] = ServoMotion(name, cfg);
+        //ServoConfig cfg = LoadServoConfig(name, defaults);
+        Servos[logicalId] = ServoMotion(name, defaults);
         // Will be initialised in the Update Task
     }
 
@@ -241,6 +242,7 @@ namespace ServoAX12
 
     void UpdateServo(ServoMotion &servo)
     {
+        try{
         // Si le servo n'est pas initialisé, ne pas le forcer
         if (!servo.initialized)
         {
@@ -277,11 +279,9 @@ namespace ServoAX12
         // à la fin du timeOut (si != 0), le servo sera considéré arrivé (pour éviter de bloquer le code)
         if ((servo.position >= servo.command_position + 5 || servo.position <= servo.command_position - 5) && !servo.timeOut.IsTimeOut())
         {
-            if (!servo.ledState)
+            if (!servo.ledState && !simulation && dxl.ledOn(servo.config.ax12Id))
             {
                 servo.ledState = true;
-                if (!simulation)
-                    dxl.ledOn(servo.config.ax12Id);
             }
             servo.IsMoving = true;
 
@@ -300,14 +300,25 @@ namespace ServoAX12
         }
         else
         {
-            if (servo.ledState)
+            if (servo.ledState && !simulation && dxl.ledOff(servo.config.ax12Id))
             {
                 servo.ledState = false;
-                if (!simulation)
-                    dxl.ledOff(servo.config.ax12Id);
             }
             servo.IsMoving = false;
         }
+        }
+        catch (const std::exception &e)
+        {
+            printError(e.what());
+        }
+    }
+
+    bool IsServoInPosition(ServoID _logicalId, float _position, float tolerance)
+    {
+        if (!ServoExists(_logicalId))
+            return false;
+        ServoMotion &servo = Servos.at(_logicalId);
+        return fabsf(servo.position - _position) <= tolerance;
     }
 
     bool AreAllServoMoving()
@@ -329,6 +340,22 @@ namespace ServoAX12
         return Servos.at(logicalId).IsMoving;
     }
 
+    void WaitAllServo()
+    {
+        while (AreAllServoMoving())
+        {
+            vTaskDelay(1);
+        }
+    }
+
+    void WaitServo(Hardware_Config::ServoID logicalId)
+    {
+        while (IsServoMoving(logicalId))
+        {
+            vTaskDelay(1);
+        }
+    }
+
     void SetServoPosition(ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs)
     {
         if (!ServoExists(logicalId))
@@ -346,30 +373,33 @@ namespace ServoAX12
         SetServoPosition(logicalId, position, timeOutMs);
     }
 
-    void SetServoPosition(ServoID logicalId, float position, int timeOutMs)
+    void SetServoPosition(ServoID logicalId, float _position, int timeOutMs)
     {
         if (!ServoExists(logicalId))
             return;
         ServoMotion &servo = Servos.at(logicalId);
+        
+        if(!servo.initialized || servo.IsMoving)
+            return;
 
         float minPos = 0.0f;
         float maxPos = 0.0f;
         GetPositionBounds(servo, minPos, maxPos);
-        if (position < minPos || position > maxPos)
+        if (_position < minPos || _position > maxPos)
         {
             println("Position out of range for Servo ID : %i", logicalId);
-            println("Position : %f", position);
+            println("Position : %f", _position);
             println("Min : %f", minPos);
             println("Max : %f", maxPos);
             return;
         }
-        else
+
+        if(IsServoInPosition(logicalId, _position))
         {
-            println("Set position %f for Servo ID : %i", position, logicalId);
+            return;
         }
-        servo.command_position = position;
-        servo.IsMoving = true;
-        servo.goalPositionAcked = false;
+        println("Set position %f for Servo ID : %i", _position, logicalId);
+
         if (timeOutMs > 0)
         {
             servo.timeOut.Start(timeOutMs);
@@ -378,6 +408,9 @@ namespace ServoAX12
         {
             servo.timeOut.Stop();
         }
+        servo.command_position = _position;
+        servo.IsMoving = true;
+        servo.goalPositionAcked = false;
         // We set the command into the task, if power is not too low
     }
 
@@ -484,8 +517,18 @@ namespace ServoAX12
         {
             if (cmd.size == 2)
             {
-                // AX12Pos:1:180
-                // AX12Pos:2:160
+                // AX12Pos:1:58    // UP
+                // AX12Pos:1:100    // UP
+                // AX12Pos:1:150    // UP
+                
+                // AX12Pos:1:110    // UP
+
+                // AX12Pos:2:48    // Front
+                // AX12Pos:2:240    // Front
+                // AX12Pos:2:270    // Front
+                
+                // AX12Pos:2:200    // Front
+
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
                 print("AX12 Servo id: %i ", logicalId);
                 float position = static_cast<float>(cmd.data[1]);
@@ -536,12 +579,96 @@ namespace ServoAX12
                 }
             }
         }
+        else if (cmd.cmdEquals("AX12Depose"))
+        {
+            Depose();
+        }
+        else if (cmd.cmdEquals("AX12Prise"))
+        {
+            Prise();
+        }
+        else if (cmd.cmdEquals("AX12Retourne"))
+        {
+            Retourne();
+        }
+        else if (cmd.cmdEquals("AX12PrePrise"))
+        {
+            PrePrise();
+        }
+        else if (cmd.cmdEquals("AX12Repli"))
+        {
+            Repli();
+        }
         else
         {
             Printer::println("Not a AX12 command !");
             return false;
         }
         return true;
+    }
+
+    void Depose()
+    {
+            SetServoPosition(Hardware_Config::ServoID::Front,
+                 Hardware_Config::ServoPosition::Max);
+            WaitServo(Hardware_Config::ServoID::Front);
+            SetServoPosition(Hardware_Config::ServoID::Up,
+                 Hardware_Config::ServoPosition::Pos3);
+            WaitServo(Hardware_Config::ServoID::Up);
+    }
+
+    void PrePrise()
+    {
+            SetServoPosition(Hardware_Config::ServoID::Up,
+                 Hardware_Config::ServoPosition::Pos3);
+            WaitServo(Hardware_Config::ServoID::Up);
+            SetServoPosition(Hardware_Config::ServoID::Front,
+                 Hardware_Config::ServoPosition::Max);
+            WaitServo(Hardware_Config::ServoID::Front);
+
+    }
+
+    void Prise()
+    {
+            SetServoPosition(Hardware_Config::ServoID::Up,
+                 Hardware_Config::ServoPosition::Pos1);
+            WaitServo(Hardware_Config::ServoID::Up);
+            SetServoPosition(Hardware_Config::ServoID::Front,
+                 Hardware_Config::ServoPosition::Pos3);
+            WaitServo(Hardware_Config::ServoID::Front);
+    }
+
+    void Retourne()
+    {
+            SetServoPosition(Hardware_Config::ServoID::Up,
+                 Hardware_Config::ServoPosition::Pos2);
+            WaitServo(Hardware_Config::ServoID::Up);
+            SetServoPosition(Hardware_Config::ServoID::Front,
+                 Hardware_Config::ServoPosition::Pos2);
+            WaitServo(Hardware_Config::ServoID::Front);
+            SetServoPosition(Hardware_Config::ServoID::Up,
+                 Hardware_Config::ServoPosition::Pos3);
+            WaitServo(Hardware_Config::ServoID::Up);
+    }
+
+    void Repli()
+    {
+            SetServoPosition(Hardware_Config::ServoID::Up,
+                 Hardware_Config::ServoPosition::Pos1);
+            WaitServo(Hardware_Config::ServoID::Up);
+            SetServoPosition(Hardware_Config::ServoID::Front,
+                 Hardware_Config::ServoPosition::Min);
+            WaitServo(Hardware_Config::ServoID::Front);
+    }
+
+    void RepliHaut()
+    {
+            SetServoPosition(Hardware_Config::ServoID::Up,
+                 Hardware_Config::ServoPosition::Pos2);
+            WaitServo(Hardware_Config::ServoID::Up);
+            SetServoPosition(Hardware_Config::ServoID::Front,
+                 Hardware_Config::ServoPosition::Pos1);
+            WaitServo(Hardware_Config::ServoID::Front);
     }
 
     void PrintCommandHelp()

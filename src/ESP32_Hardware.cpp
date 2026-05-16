@@ -27,7 +27,8 @@ namespace Hardware
 
     void SetExternalI2CUpdateCallback(CallbackFunction_t callback)
     {
-        externalI2CUpdateCallback = callback;
+        if(externalI2CUpdateCallback == nullptr)
+            externalI2CUpdateCallback = callback;
         externalI2CUpdateTimeout.Start(kExternalI2CUpdatePeriodMs);
     }
 
