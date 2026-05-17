@@ -110,18 +110,33 @@ namespace ToF_VL53L8CX
             // Initialize simulated sensorData with default values
             for (int i = 0; i < 64; i++)
             {
+#ifndef VL53L8CX_DISABLE_DISTANCE_MM
                 sensorData.distance_mm[i] = 500; // 500mm default distance
-                // sensorData.ambient_per_spad[i] = 100;
-                // sensorData.nb_target_detected[i] = 1;
-                // sensorData.nb_spads_enabled[i] = 16;
-                // sensorData.signal_per_spad[i] = 1000;
-                // sensorData.range_sigma_mm[i] = 100;
+#endif
+#ifndef VL53L8CX_DISABLE_AMBIENT_PER_SPAD
+                sensorData.ambient_per_spad[i] = 100;
+#endif
+#ifndef VL53L8CX_DISABLE_NB_TARGET_DETECTED
+                sensorData.nb_target_detected[i] = 1;
+#endif
+#ifndef VL53L8CX_DISABLE_NB_SPADS_ENABLED
+                sensorData.nb_spads_enabled[i] = 16;
+#endif
+#ifndef VL53L8CX_DISABLE_SIGNAL_PER_SPAD
+                sensorData.signal_per_spad[i] = 1000;
+#endif
+#ifndef VL53L8CX_DISABLE_RANGE_SIGMA_MM
+                sensorData.range_sigma_mm[i] = 100;
+#endif
+#ifndef VL53L8CX_DISABLE_TARGET_STATUS
                 sensorData.target_status[i] = 0;
-                // sensorData.reflectance[i] = 50;
+#endif
+#ifndef VL53L8CX_DISABLE_REFLECTANCE_PERCENT
+                sensorData.reflectance[i] = 50;
+#endif
             }
             errorStatus = 0;
         }
-
         measurementStartTime = millis();
     }
 
@@ -141,10 +156,10 @@ namespace ToF_VL53L8CX
                     errorStatus = sensor.get_ranging_data(&sensorData); // Read distance data
                     newDataReady = 0;
 
-                    String resultDistance = "Tof:";
                     int found = 0;
                     for (size_t i = 0; i < 8; i++)
                     {
+#if !defined(VL53L8CX_DISABLE_DISTANCE_MM) && !defined(VL53L8CX_DISABLE_TARGET_STATUS)
                          // Check if distance is below threshold and status is valid
                         if (sensorData.distance_mm[i] < targetDistance && sensorData.target_status[i] == 5)
                         {
@@ -157,8 +172,8 @@ namespace ToF_VL53L8CX
                         else
                         {
                             firstLineDistances[i] = 0;
-                        }                        
-                        resultDistance += " " + String(firstLineDistances[i]);
+                        }
+#endif
                     }
                     if(found > 5)
                     {
@@ -168,8 +183,6 @@ namespace ToF_VL53L8CX
                     {
                         target_present = false;
                     }
-
-                    println(resultDistance);
                 }
             }
             else
@@ -224,29 +237,39 @@ namespace ToF_VL53L8CX
 
     void printProcessing()
     {
-        // Serial.print("VL53amb");
-        // sendUint32Array(sensorData.ambient_per_spad, 64);
-
-        //Serial.print("VL53tar");
-        //Serial.write(sensorData.nb_target_detected, 64);
-
-        // Serial.print("VL53spa");
-        // sendUint32Array(sensorData.nb_spads_enabled, 64);
-
-        // Serial.print("VL53sps");
-        // sendUint32Array(sensorData.signal_per_spad, 64);
-
-        // Serial.print("VL53sig");
-        // sendUint16Array(sensorData.range_sigma_mm, 64);
-
+        
+#ifndef VL53L8CX_DISABLE_AMBIENT_PER_SPAD
+        Serial.print("VL53amb");
+        sendUint32Array(sensorData.ambient_per_spad, 64);
+#endif
+#ifndef VL53L8CX_DISABLE_NB_TARGET_DETECTED
+        Serial.print("VL53tar");
+        Serial.write(sensorData.nb_target_detected, 64);
+#endif
+#ifndef VL53L8CX_DISABLE_NB_SPADS_ENABLED
+        Serial.print("VL53spa");
+        sendUint32Array(sensorData.nb_spads_enabled, 64);
+#endif
+#ifndef VL53L8CX_DISABLE_SIGNAL_PER_SPAD
+        Serial.print("VL53sps");
+        sendUint32Array(sensorData.signal_per_spad, 64);
+#endif
+#ifndef VL53L8CX_DISABLE_RANGE_SIGMA_MM
+        Serial.print("VL53sig");
+        sendUint16Array(sensorData.range_sigma_mm, 64);
+#endif
+#ifndef VL53L8CX_DISABLE_DISTANCE_MM
         Serial.print("VL53dis");
         sendInt16Array(sensorData.distance_mm, 64);
-
+#endif
+#ifndef VL53L8CX_DISABLE_TARGET_STATUS
         Serial.print("VL53sta");
         Serial.write(sensorData.target_status, 64);
-
-        // Serial.print("VL53ref");
-        // Serial.write(sensorData.reflectance, 64);
+#endif
+#ifndef VL53L8CX_DISABLE_REFLECTANCE_PERCENT
+        Serial.print("VL53ref");
+        Serial.write(sensorData.reflectance, 64);
+#endif
     }
 
     void printFormattedOutput()
