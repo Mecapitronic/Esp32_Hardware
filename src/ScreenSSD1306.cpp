@@ -13,6 +13,7 @@ namespace Screen
         constexpr uint8_t kRows = 8;
         constexpr uint8_t kCols = 21;
         constexpr uint8_t kCharWidthPx = 6;
+        constexpr uint8_t maxObstacles = 5;
 
         struct Element
         {
@@ -33,7 +34,8 @@ namespace Screen
         Element elementLowBattery{1, 7, "", ""};
         Element elementTime{1, 16, "", ""};
 
-        Element elementBlankLine2{2, 0, "                     ", ""};
+        //Element elementBlankLine2{2, 0, "                     ", ""};
+        Element elementObstacles{2, 0, "", ""};
 
         Element elementPosX{3, 0, "X  123", ""};
         Element elementPosTargetX{3, 6, "X  123", ""};
@@ -103,7 +105,8 @@ namespace Screen
             elementColor.oldText = "";
             elementPami.oldText = "";
             elementTime.oldText = "";
-            elementBlankLine2.oldText = "";
+            //elementBlankLine2.oldText = "";
+            elementObstacles.oldText = "";
             elementLowBattery.oldText = "";
             elementPosX.oldText = "";
             elementPosTargetX.oldText = "";
@@ -162,6 +165,32 @@ namespace Screen
                 return "MATCH";
             }
             return "MODE";
+        }
+
+        bool onHold = false;
+        Point obstacles[maxObstacles] = {};
+        String ObstaclesToText()
+        {
+            String result = "Obs ";
+            String point = "         ";
+            for (size_t i = 0; i < maxObstacles; i++)
+            {
+                if (obstacles[i].x != 0 || obstacles[i].y != 0)
+                {
+                    result += "X";
+                    point = String(obstacles[i].x) + ":" + String(obstacles[i].y);
+                }
+                else
+                {
+                    result += "-";
+                }
+            }
+            result += " " + point;
+            if(onHold)
+                result+=" HOLD";
+            else
+                result+="     ";
+            return result;
         }
 
         String NumPamiToText()
@@ -353,6 +382,7 @@ namespace Screen
 
             elementLowBattery.text = LowBatteryToText();
 
+            elementObstacles.text = ObstaclesToText();
             elementPosX.text = PoseXToText();
             elementPosY.text = PoseYToText();
             elementPosA.text = PoseAToText();
@@ -372,7 +402,8 @@ namespace Screen
             write_element(elementLowBattery);
             write_element(elementTime);
 
-            write_element(elementBlankLine2);
+            //write_element(elementBlankLine2);
+            write_element(elementObstacles);
 
             write_element(elementPosX);
             write_element(elementPosTargetX);
@@ -405,6 +436,20 @@ namespace Screen
     void SetTarget(const Pose newTarget)
     {
         target = newTarget;
+    }
+
+    void SetHold(bool hold)
+    {
+        onHold = hold;
+    }
+
+    void SetObstacle(int id, Point point)
+    {
+        if(id < 0 || id >= maxObstacles)
+        {
+            return;
+        }
+        obstacles[id] = point;
     }
 
 } // namespace Screen

@@ -30,6 +30,8 @@ namespace Screen
     void Update();
     void SetPose(const Pose newPose);
     void SetTarget(const Pose newTarget);
+    void SetHold(bool hold);
+    void SetObstacle(int id, Point point);
 
 } // namespace Screen
 
