@@ -25,8 +25,8 @@ namespace ToF_VL53L8CX
             for (size_t i = 0; i < len; i++)
             {
                 int16_t val = data[i];
-                Serial.write((uint8_t)(val & 0xFF));        // LSB
-                Serial.write((uint8_t)((val >> 8) & 0xFF)); // MSB
+                SERIAL_DEBUG.write((uint8_t)(val & 0xFF));        // LSB
+                SERIAL_DEBUG.write((uint8_t)((val >> 8) & 0xFF)); // MSB
             }
         }
 
@@ -35,8 +35,8 @@ namespace ToF_VL53L8CX
             for (size_t i = 0; i < len; i++)
             {
                 uint16_t val = data[i];
-                Serial.write((uint8_t)(val & 0xFF));        // LSB
-                Serial.write((uint8_t)((val >> 8) & 0xFF)); // MSB
+                SERIAL_DEBUG.write((uint8_t)(val & 0xFF));        // LSB
+                SERIAL_DEBUG.write((uint8_t)((val >> 8) & 0xFF)); // MSB
             }
         }
 
@@ -45,10 +45,10 @@ namespace ToF_VL53L8CX
             for (size_t i = 0; i < len; i++)
             {
                 int32_t val = data[i];
-                Serial.write((uint8_t)(val & 0xFF));
-                Serial.write((uint8_t)((val >> 8) & 0xFF));
-                Serial.write((uint8_t)((val >> 16) & 0xFF));
-                Serial.write((uint8_t)((val >> 24) & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)(val & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)((val >> 8) & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)((val >> 16) & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)((val >> 24) & 0xFF));
             }
         }
 
@@ -57,10 +57,10 @@ namespace ToF_VL53L8CX
             for (size_t i = 0; i < len; i++)
             {
                 uint32_t val = data[i];
-                Serial.write((uint8_t)(val & 0xFF));
-                Serial.write((uint8_t)((val >> 8) & 0xFF));
-                Serial.write((uint8_t)((val >> 16) & 0xFF));
-                Serial.write((uint8_t)((val >> 24) & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)(val & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)((val >> 8) & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)((val >> 16) & 0xFF));
+                SERIAL_DEBUG.write((uint8_t)((val >> 24) & 0xFF));
             }
         }
     } // namespace
@@ -239,36 +239,36 @@ namespace ToF_VL53L8CX
     {
         
 #ifndef VL53L8CX_DISABLE_AMBIENT_PER_SPAD
-        Serial.print("VL53amb");
+        SERIAL_DEBUG.print("VL53amb");
         sendUint32Array(sensorData.ambient_per_spad, 64);
 #endif
 #ifndef VL53L8CX_DISABLE_NB_TARGET_DETECTED
-        Serial.print("VL53tar");
-        Serial.write(sensorData.nb_target_detected, 64);
+        SERIAL_DEBUG.print("VL53tar");
+        SERIAL_DEBUG.write(sensorData.nb_target_detected, 64);
 #endif
 #ifndef VL53L8CX_DISABLE_NB_SPADS_ENABLED
-        Serial.print("VL53spa");
+        SERIAL_DEBUG.print("VL53spa");
         sendUint32Array(sensorData.nb_spads_enabled, 64);
 #endif
 #ifndef VL53L8CX_DISABLE_SIGNAL_PER_SPAD
-        Serial.print("VL53sps");
+        SERIAL_DEBUG.print("VL53sps");
         sendUint32Array(sensorData.signal_per_spad, 64);
 #endif
 #ifndef VL53L8CX_DISABLE_RANGE_SIGMA_MM
-        Serial.print("VL53sig");
+        SERIAL_DEBUG.print("VL53sig");
         sendUint16Array(sensorData.range_sigma_mm, 64);
 #endif
 #ifndef VL53L8CX_DISABLE_DISTANCE_MM
-        Serial.print("VL53dis");
+        SERIAL_DEBUG.print("VL53dis");
         sendInt16Array(sensorData.distance_mm, 64);
 #endif
 #ifndef VL53L8CX_DISABLE_TARGET_STATUS
-        Serial.print("VL53sta");
-        Serial.write(sensorData.target_status, 64);
+        SERIAL_DEBUG.print("VL53sta");
+        SERIAL_DEBUG.write(sensorData.target_status, 64);
 #endif
 #ifndef VL53L8CX_DISABLE_REFLECTANCE_PERCENT
-        Serial.print("VL53ref");
-        Serial.write(sensorData.reflectance, 64);
+        SERIAL_DEBUG.print("VL53ref");
+        SERIAL_DEBUG.write(sensorData.reflectance, 64);
 #endif
     }
 
@@ -281,12 +281,12 @@ namespace ToF_VL53L8CX
         {
             for (int x = imageWidth - 1; x >= 0; x--)
             {
-                Serial.print(sensorData.distance_mm[x + y]);
-                Serial.print("\t");
+                SERIAL_DEBUG.print(sensorData.distance_mm[x + y]);
+                SERIAL_DEBUG.print("\t");
             }
-            Serial.println();
+            SERIAL_DEBUG.println();
         }
-        Serial.println();
+        SERIAL_DEBUG.println();
     }
 
     void printCSVOutput()
@@ -296,11 +296,11 @@ namespace ToF_VL53L8CX
         {
             for (int x = imageWidth - 1; x >= 0; x--)
             {
-                Serial.print(sensorData.distance_mm[x + y]);
-                Serial.print(",");
+                SERIAL_DEBUG.print(sensorData.distance_mm[x + y]);
+                SERIAL_DEBUG.print(",");
             }
         }
-        Serial.println();
+        SERIAL_DEBUG.println();
     }
 
 } // namespace ToF_VL53L8CX
