@@ -96,7 +96,7 @@ namespace ServoAX12
          * @brief Construct a new Servo Motion object
          *
          * @param _name Nom du servo
-         * @param _config Configuration chargée depuis les préférences
+         * @param _config Configuration du servo
          */
         ServoMotion(String _name,
                     const ServoConfig &_config)
@@ -119,6 +119,7 @@ namespace ServoAX12
 
     void InitServo(ServoMotion &servo);
     void AddServo(Hardware_Config::ServoID logicalId, String name, const ServoConfig &defaults);
+    void AddOrUpdateServo(Hardware_Config::ServoID logicalId, const String &name, const ServoConfig &config);
 
     ServoMotion GetServoByNumber(uint8_t number);
 
@@ -144,8 +145,6 @@ namespace ServoAX12
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
     void PrintDxlInfo(Hardware_Config::ServoID logicalId = Hardware_Config::ServoID::BroadCast);
 
-    void ConfigureServo(const String &name, const String &field, int32_t value);
-    void ResetServoConfig(const String &name);
     void PrintServoConfigs();
 
     void TeleplotAllPosition();

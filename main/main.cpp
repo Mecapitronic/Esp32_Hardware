@@ -6,12 +6,12 @@ using namespace ServoAX12;
 void setup(void)
 {
     ESP32_Helper::Initialisation();
-    Hardware::Initialisation();
+    Hardware::Initialisation(false);
     Power::EnablePower();
 
-    ServoConfig testConfig = ServoConfig((uint8_t)ServoID::Test,
-        std::array<int32_t, MAX_SERVO_POSITIONS>{0, 145, 290}, 3);
-    AddServo(ServoID::Test, "Test", testConfig);
+    //ServoConfig testConfig = ServoConfig((uint8_t)ServoID::Test,
+    //    std::array<int32_t, MAX_SERVO_POSITIONS>{0, 145, 290}, 3);
+    //AddServo(ServoID::Test, "Test", testConfig);
 }
 
 void loop(void)

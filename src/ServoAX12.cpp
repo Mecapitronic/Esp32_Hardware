@@ -39,33 +39,6 @@ namespace ServoAX12
         constexpr uint8_t kServoInitStepCount =
             sizeof(kServoInitSteps) / sizeof(kServoInitSteps[0]);
 
-        // Charge la config d'un servo depuis les préférences NVS, avec des valeurs par défaut
-        // Clés NVS : "srv.<name>.id", "srv.<name>.min", "srv.<name>.pos1", "srv.<name>.pos2", "srv.<name>.max"
-        // Limite NVS : 15 chars max par clé → nom servo limité à 7 chars
-        ServoConfig LoadServoConfig(const String &name, const ServoConfig &defaults)
-        {
-            ServoConfig cfg = defaults;
-            uint8_t safeDefaultCount = defaults.positionCount;
-            if (safeDefaultCount == 0 || safeDefaultCount > MAX_SERVO_POSITIONS)
-            {
-                safeDefaultCount = 1;
-            }
-            cfg.ax12Id = (uint8_t)Preferences_Helper::LoadFromPreference(
-                "srv." + name + ".id", (int32_t)defaults.ax12Id);
-            cfg.positionCount = (uint8_t)Preferences_Helper::LoadFromPreference(
-                "srv." + name + ".cnt", (int32_t)safeDefaultCount);
-            if (cfg.positionCount == 0 || cfg.positionCount > MAX_SERVO_POSITIONS)
-            {
-                cfg.positionCount = safeDefaultCount;
-            }
-            for (uint8_t i = 0; i < cfg.positionCount; ++i)
-            {
-                String key = "srv." + name + ".p" + String(i);
-                cfg.positions[i] = Preferences_Helper::LoadFromPreference(key, defaults.positions[i]);
-            }
-            return cfg;
-        }
-
         void GetPositionBounds(const ServoMotion &servo, float &minPos, float &maxPos)
         {
             minPos = (float)servo.config.positions[0];
@@ -219,9 +192,52 @@ namespace ServoAX12
 
     void AddServo(ServoID logicalId, String name, const ServoConfig &defaults)
     {
-        ServoConfig cfg = LoadServoConfig(name, defaults);
-        Servos[logicalId] = ServoMotion(name, cfg);
+        Servos[logicalId] = ServoMotion(name, defaults);
         // Will be initialised in the Update Task
+    }
+
+    void AddOrUpdateServo(ServoID logicalId, const String &name, const ServoConfig &config)
+    {
+        auto it = Servos.find(logicalId);
+        if (it == Servos.end())
+        {
+            AddServo(logicalId, name, config);
+            return;
+        }
+
+        ServoMotion &servo = it->second;
+        bool changed = (servo.config.ax12Id != config.ax12Id) ||
+                       (servo.config.positionCount != config.positionCount);
+        if (!changed)
+        {
+            for (size_t i = 0; i < MAX_SERVO_POSITIONS; ++i)
+            {
+                if (servo.config.positions[i] != config.positions[i])
+                {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        servo.name = name;
+        if (!changed)
+        {
+            return;
+        }
+
+        servo.config = config;
+        servo.command_position = (float)servo.config.positions[0];
+        servo.position = servo.command_position;
+        servo.IsMoving = false;
+        servo.ledState = false;
+        servo.goalPositionAcked = false;
+        servo.initialized = false;
+        servo.initState = 0;
+        servo.lastInitAttempt = 0;
+        servo.failureCount = 0;
+        servo.timeOut.Stop();
+        println("Servo %s updated from Pami config (AX12 ID %d)", servo.name.c_str(), servo.config.ax12Id);
     }
 
     ServoMotion GetServoByNumber(uint8_t number)
@@ -434,48 +450,6 @@ namespace ServoAX12
             else
                 PrintDxlInfo();
         }
-        else if (cmd.cmdEquals("AX12Config"))
-        {
-            // AX12Config:<name>:<field>:<value>
-            // field: id | cnt | p0..p9
-            // AX12Config:VL53:p1:180
-            // AX12Config:VL53:id:3
-            // AX12Config:Bras:id:17
-
-            // AX12Config:VL53:id:6
-            // AX12Config:Bras:id:15
-
-            if (cmd.size == 1 && strlen(cmd.dataStr1) > 0 && strlen(cmd.dataStr2) > 0)
-            {
-                String name(cmd.dataStr1);
-                String field(cmd.dataStr2);
-                bool isPositionField = field.length() >= 2 && field[0] == 'p';
-                if (field != "id" && field != "cnt" && !isPositionField)
-                {
-                    printError("AX12Config: field invalide. Utiliser: id, cnt, p0..p9");
-                    return true;
-                }
-                ConfigureServo(name, field, cmd.data[0]);
-            }
-            else
-            {
-                printError("AX12Config: usage -> AX12Config:<nom>:<field>:<valeur>");
-            }
-        }
-        else if (cmd.cmdEquals("AX12ConfigReset"))
-        {
-            // AX12ConfigReset          -> réinitialise tous les servos
-            // AX12ConfigReset:<name>   -> réinitialise un servo nommé
-            if (strlen(cmd.dataStr1) > 0)
-            {
-                ResetServoConfig(String(cmd.dataStr1));
-            }
-            else
-            {
-                for (const auto &[servoKey, servo] : Servos)
-                    ResetServoConfig(servo.name);
-            }
-        }
         else if (cmd.cmdEquals("AX12ConfigPrint"))
         {
             PrintServoConfigs();
@@ -551,11 +525,6 @@ namespace ServoAX12
         Printer::println("      Scan all Dynamixel on all protocols and baudrates");
         Printer::println(" > AX12PrintInfo:[id]");
         Printer::println("      Print info for all servos or for the given id");
-        Printer::println(" > AX12Config:<name>:<field>:<value>");
-        Printer::println("      Configure a servo field (id|cnt|p0..p9) and save to NVS");
-        Printer::println("      Example: AX12Config:VL53:p3:180");
-        Printer::println(" > AX12ConfigReset[:<name>]");
-        Printer::println("      Reset NVS config to defaults for one or all servos");
         Printer::println(" > AX12ConfigPrint");
         Printer::println("      Print current config of all registered servos");
         Printer::println(" > AX12Pos:[id]:[position]");
@@ -686,52 +655,6 @@ namespace ServoAX12
         }
     }
 
-    void ConfigureServo(const String &name, const String &field, int32_t value)
-    {
-        String key = "srv." + name + "." + field;
-        Preferences_Helper::SaveToPreference(key, value);
-        // Mise à jour en mémoire si le servo est déjà enregistré
-        for (auto &[servoKey, servo] : Servos)
-        {
-            if (servo.name == name)
-            {
-                if (field == "id")
-                {
-                    servo.config.ax12Id = (uint8_t)value;
-                    servo.initialized = false;
-                    servo.initState = 0;
-                }
-                else if (field == "cnt")
-                {
-                    if (value > 0 && value <= (int32_t)MAX_SERVO_POSITIONS)
-                        servo.config.positionCount = (uint8_t)value;
-                }
-                else if (field.length() >= 2 && field[0] == 'p')
-                {
-                    int32_t index = field.substring(1).toInt();
-                    if (index >= 0 && index < (int32_t)MAX_SERVO_POSITIONS)
-                    {
-                        servo.config.positions[index] = value;
-                        if (index >= servo.config.positionCount)
-                            servo.config.positionCount = (uint8_t)(index + 1);
-                    }
-                }
-                println("Servo %s updated: %s = %d", name.c_str(), field.c_str(), value);
-                break;
-            }
-        }
-    }
-
-    void ResetServoConfig(const String &name)
-    {
-        Preferences_Helper::RemoveFromPreference("srv." + name + ".id");
-        Preferences_Helper::RemoveFromPreference("srv." + name + ".cnt");
-        for (uint8_t i = 0; i < MAX_SERVO_POSITIONS; ++i)
-        {
-            Preferences_Helper::RemoveFromPreference("srv." + name + ".p" + String(i));
-        }
-        println("Servo config reset for '%s'. Redémarrer pour appliquer les valeurs par défaut.", name.c_str());
-    }
 
     void PrintServoConfigs()
     {
