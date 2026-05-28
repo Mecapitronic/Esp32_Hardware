@@ -104,7 +104,6 @@ namespace ServoAX12
             // Initialisation des valeurs
             name = _name;
             config = _config;
-            command_position = (int)config.positions[0];
         }
 
         bool operator==(const ServoMotion &other) const
@@ -119,7 +118,6 @@ namespace ServoAX12
 
     void InitServo(ServoMotion &servo);
     void AddServo(Hardware_Config::ServoID logicalId, String name, const ServoConfig &defaults);
-    void AddOrUpdateServo(Hardware_Config::ServoID logicalId, const String &name, const ServoConfig &config);
 
     ServoMotion GetServoByNumber(uint8_t number);
 

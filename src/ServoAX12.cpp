@@ -130,17 +130,17 @@ namespace ServoAX12
             return;
         }
 
-        print("Init Servo ID : %i name : %s - Init State %d",
-              servo.config.ax12Id,
-              servo.name.c_str(),
-              servo.initState);
+        println("Init Servo ID : %i name : %s - Init State %d",
+                servo.config.ax12Id,
+                servo.name.c_str(),
+                servo.initState);
         if (simulation)
         {
-            servo.position = servo.command_position = (int)servo.config.positions[0];
+            servo.position = servo.command_position = servo.config.positions[0];
             servo.initialized = true;
             servo.failureCount = 0;
             println("Servo %s %d position: %d [SIM]",
-                    servo.name,
+                    servo.name.c_str(),
                     servo.config.ax12Id,
                     servo.position);
             return;
@@ -157,6 +157,7 @@ namespace ServoAX12
                     break;
                 }
                 servo.initState++;
+                vTaskDelay(1);
             }
 
             if (servo.initState == kServoInitStepCount)
@@ -171,12 +172,13 @@ namespace ServoAX12
                 else
                 {
 
-                        println("Servo %s %d at position: %d go to %d - Init Done !",
+                    println("Servo %s %d at position: %d go to %d - Init Done !",
                             servo.name,
                             servo.config.ax12Id,
                             servo.position,
-                            (int)servo.config.positions[0]);
-                        servo.position = servo.command_position = (int)servo.config.positions[0];
+                            servo.config.positions[0]);
+                    // on le met à la position courante pour éviter de donner un ordre non voulu
+                    servo.position = servo.command_position = (int)presentPosition;
                     servo.initialized = true;
                     servo.failureCount = 0;
                     servo.initState++;
@@ -194,50 +196,6 @@ namespace ServoAX12
     {
         Servos[logicalId] = ServoMotion(name, defaults);
         // Will be initialised in the Update Task
-    }
-
-    void AddOrUpdateServo(ServoID logicalId, const String &name, const ServoConfig &config)
-    {
-        auto it = Servos.find(logicalId);
-        if (it == Servos.end())
-        {
-            AddServo(logicalId, name, config);
-            return;
-        }
-
-        ServoMotion &servo = it->second;
-        bool changed = (servo.config.ax12Id != config.ax12Id) ||
-                       (servo.config.positionCount != config.positionCount);
-        if (!changed)
-        {
-            for (size_t i = 0; i < MAX_SERVO_POSITIONS; ++i)
-            {
-                if (servo.config.positions[i] != config.positions[i])
-                {
-                    changed = true;
-                    break;
-                }
-            }
-        }
-
-        servo.name = name;
-        if (!changed)
-        {
-            return;
-        }
-
-        servo.config = config;
-        servo.command_position = (int)servo.config.positions[0];
-        servo.position = servo.command_position;
-        servo.IsMoving = false;
-        servo.ledState = false;
-        servo.goalPositionAcked = false;
-        servo.initialized = false;
-        servo.initState = 0;
-        servo.lastInitAttempt = 0;
-        servo.failureCount = 0;
-        servo.timeOut.Stop();
-        println("Servo %s updated from Pami config (AX12 ID %d)", servo.name.c_str(), servo.config.ax12Id);
     }
 
     ServoMotion GetServoByNumber(uint8_t number)
@@ -273,7 +231,14 @@ namespace ServoAX12
         // On récupère la position actuelle du servo
         if (simulation)
         {
-            servo.position = servo.position + (servo.command_position - servo.position) / 2;
+            if(servo.command_position != servo.position)
+            {
+                // Update every 10ms, so 100 deg in 1 sec
+                if(servo.command_position - servo.position > 0)
+                    servo.position++;
+                else
+                    servo.position--;
+            }
         }
         else
         {
@@ -379,10 +344,15 @@ namespace ServoAX12
             println("Max : %d", maxPos);
             return;
         }
-        else
+        
+        if(servo.command_position == position)
         {
-            println("Set position %d for Servo ID : %i", position, logicalId);
+            // same command, do nothing
+            return;
         }
+
+        println("Servo ID : %i, Set position from %d to %d", logicalId, servo.position, position);
+        
         servo.command_position = position;
         servo.IsMoving = true;
         servo.goalPositionAcked = false;
@@ -625,7 +595,7 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            teleplot("Servo " + servo.name + " " + String(servo.config.ax12Id), servo.position);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id), servo.position);
         }
     }
 
@@ -634,7 +604,7 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            teleplot("Servo " + servo.name + " " + String(servo.config.ax12Id), servo.position);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id), servo.position);
         }
     }
 
@@ -642,7 +612,7 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            println("Servo %s %d : %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d : %d", servo.name, servo.config.ax12Id, servo.position);
         }
     }
 
@@ -651,7 +621,7 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            println("Servo %s %d : %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d : %d", servo.name, servo.config.ax12Id, servo.position);
         }
     }
 

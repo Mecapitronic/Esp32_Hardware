@@ -21,7 +21,15 @@ namespace Match
         int pami = Preferences_Helper::LoadFromPreference("NumPami", 0);
         if(pami == 0)
         {
-            printError("No N° PAMI : " + String(pami));
+            if(simulation)
+            {
+                pami = 1; // Default to PAMI 1 in simulation
+                println("Simulation, default N° PAMI : %i", pami);
+            }
+            else
+            {
+                printError("No N° PAMI : " + String(pami));
+            }
         }
         else
         {
@@ -192,6 +200,7 @@ namespace Match
     {
         if(cmd.cmdEquals("MatchNumPami") && cmd.size == 1)
         {
+            // MatchNumPami:2
             int numPamiCmd = cmd.data[0];
             if(numPamiCmd >= 0 && numPamiCmd <= 99)
             {
