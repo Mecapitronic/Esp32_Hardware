@@ -39,13 +39,13 @@ namespace ServoAX12
         constexpr uint8_t kServoInitStepCount =
             sizeof(kServoInitSteps) / sizeof(kServoInitSteps[0]);
 
-        void GetPositionBounds(const ServoMotion &servo, float &minPos, float &maxPos)
+        void GetPositionBounds(const ServoMotion &servo, int &minPos, int &maxPos)
         {
-            minPos = (float)servo.config.positions[0];
-            maxPos = (float)servo.config.positions[0];
+            minPos = servo.config.positions[0];
+            maxPos = servo.config.positions[0];
             for (uint8_t i = 1; i < servo.config.positionCount; ++i)
             {
-                float value = (float)servo.config.positions[i];
+                int value = servo.config.positions[i];
                 if (value < minPos)
                     minPos = value;
                 if (value > maxPos)
@@ -136,10 +136,10 @@ namespace ServoAX12
               servo.initState);
         if (simulation)
         {
-            servo.position = servo.command_position = (float)servo.config.positions[0];
+            servo.position = servo.command_position = (int)servo.config.positions[0];
             servo.initialized = true;
             servo.failureCount = 0;
-            println("Servo %s %d position: %f [SIM]",
+            println("Servo %s %d position: %d [SIM]",
                     servo.name,
                     servo.config.ax12Id,
                     servo.position);
@@ -171,12 +171,12 @@ namespace ServoAX12
                 else
                 {
 
-                    println("Servo %s %d at position: %f go to %f - Init Done !",
+                        println("Servo %s %d at position: %d go to %d - Init Done !",
                             servo.name,
                             servo.config.ax12Id,
                             servo.position,
-                            (float)servo.config.positions[0]);
-                    servo.position = servo.command_position = (float)servo.config.positions[0];
+                            (int)servo.config.positions[0]);
+                        servo.position = servo.command_position = (int)servo.config.positions[0];
                     servo.initialized = true;
                     servo.failureCount = 0;
                     servo.initState++;
@@ -227,7 +227,7 @@ namespace ServoAX12
         }
 
         servo.config = config;
-        servo.command_position = (float)servo.config.positions[0];
+        servo.command_position = (int)servo.config.positions[0];
         servo.position = servo.command_position;
         servo.IsMoving = false;
         servo.ledState = false;
@@ -284,7 +284,7 @@ namespace ServoAX12
                 servo.failureCount++;
             }
             else
-                servo.position = position;
+                servo.position = (int)position;
         }
 
         // On considère que le servo est en mouvement s'il est à plus ou moins de 5 degrés de la position commandée
@@ -358,30 +358,30 @@ namespace ServoAX12
             return;
         }
 
-        float position = (float)servo.config.positions[index];
+        int position = servo.config.positions[index];
         SetServoPosition(logicalId, position, timeOutMs);
     }
 
-    void SetServoPosition(ServoID logicalId, float position, int timeOutMs)
+    void SetServoPosition(ServoID logicalId, int position, int timeOutMs)
     {
         if (!ServoExists(logicalId))
             return;
         ServoMotion &servo = Servos.at(logicalId);
 
-        float minPos = 0.0f;
-        float maxPos = 0.0f;
+        int minPos = 0;
+        int maxPos = 0;
         GetPositionBounds(servo, minPos, maxPos);
         if (position < minPos || position > maxPos)
         {
             println("Position out of range for Servo ID : %i", logicalId);
-            println("Position : %f", position);
-            println("Min : %f", minPos);
-            println("Max : %f", maxPos);
+            println("Position : %d", position);
+            println("Min : %d", minPos);
+            println("Max : %d", maxPos);
             return;
         }
         else
         {
-            println("Set position %f for Servo ID : %i", position, logicalId);
+            println("Set position %d for Servo ID : %i", position, logicalId);
         }
         servo.command_position = position;
         servo.IsMoving = true;
@@ -397,10 +397,10 @@ namespace ServoAX12
         // We set the command into the task, if power is not too low
     }
 
-    float GetServoPosition(ServoID logicalId)
+    int GetServoPosition(ServoID logicalId)
     {
         if (!ServoExists(logicalId))
-            return -1.0f;
+            return -1;
         return Servos.at(logicalId).position;
     }
 
@@ -462,10 +462,10 @@ namespace ServoAX12
                 // AX12Pos:2:160
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
                 print("AX12 Servo id: %i ", logicalId);
-                float position = static_cast<float>(cmd.data[1]);
+                int position = static_cast<int>(cmd.data[1]);
                 if (ServoExists(logicalId))
                 {
-                    println("Set Position : %f", position);
+                    println("Set Position : %d", position);
                     SetServoPosition(logicalId, position);
                 }
                 else
@@ -597,7 +597,7 @@ namespace ServoAX12
                 uint8_t ax12Id = servo.config.ax12Id;
                 if (dxl.ping(ax12Id))
                 {
-                    println("ID : %i, Name: %s, Model Number: %i, position: %f, command: %f, isMoving: %i",
+                        println("ID : %i, Name: %s, Model Number: %i, position: %d, command: %d, isMoving: %i",
                             ax12Id, servo.name, dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
                 }
                 else
@@ -615,7 +615,7 @@ namespace ServoAX12
             for (const auto &[_id, servo] : Servos)
             {
                 uint8_t ax12Id = servo.config.ax12Id;
-                println("ID : %i, Name: %s, Model Number: %i, position: %f, command: %f, isMoving: %i",
+                println("ID : %i, Name: %s, Model Number: %i, position: %d, command: %d, isMoving: %i",
                         ax12Id, servo.name, dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
             }
         }
@@ -642,7 +642,7 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            println("Servo %s %d : %f", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo %s %d : %d", servo.name, servo.config.ax12Id, servo.position);
         }
     }
 
@@ -651,7 +651,7 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            println("Servo %s %d : %f", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo %s %d : %d", servo.name, servo.config.ax12Id, servo.position);
         }
     }
 

@@ -77,9 +77,9 @@ namespace ServoAX12
     struct ServoMotion
     {
         String name = "";
-        float position = 0;
+        int position = 0;
         ServoConfig config = ServoConfig((uint8_t)Hardware_Config::ServoID::BroadCast, {0}, 1);
-        float command_position = 0;
+        int command_position = 0;
         bool IsMoving = false;
         bool ledState = false;
         Timeout timeOut;
@@ -104,7 +104,7 @@ namespace ServoAX12
             // Initialisation des valeurs
             name = _name;
             config = _config;
-            command_position = (float)config.positions[0];
+            command_position = (int)config.positions[0];
         }
 
         bool operator==(const ServoMotion &other) const
@@ -129,9 +129,9 @@ namespace ServoAX12
     bool IsServoMoving(Hardware_Config::ServoID logicalId);
 
     void SetServoPosition(Hardware_Config::ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs = 0);
-    void SetServoPosition(Hardware_Config::ServoID logicalId, float position, int timeOutMs = 0);
+    void SetServoPosition(Hardware_Config::ServoID logicalId, int position, int timeOutMs = 0);
 
-    float GetServoPosition(Hardware_Config::ServoID logicalId);
+    int GetServoPosition(Hardware_Config::ServoID logicalId);
 
     bool WriteControlTableItem(ControlTableItem::ControlTableItemIndex item,
                                uint8_t id,
