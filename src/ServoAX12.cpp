@@ -27,10 +27,10 @@ namespace ServoAX12
         // AX12 init sequence order, indexed by servo.initState
         constexpr ServoInitStep kServoInitSteps[] = {
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 0},
-            {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0},
-            {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023},
+            {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0}, //EEPROM, 0 by default
+            {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023}, //EEPROM, 1023 by default
             {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 200},
-            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200},
+            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200}, //EEPROM, 1023 by default
             {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 8},
             {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 8},
             {ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 200},
@@ -137,6 +137,8 @@ namespace ServoAX12
         if (simulation)
         {
             servo.position = servo.command_position = servo.config.positions[0];
+            servo.speed = 0;
+            servo.command_speed = 50;
             servo.initialized = true;
             servo.failureCount = 0;
             println("Servo %s %d position: %d [SIM]",
@@ -179,6 +181,8 @@ namespace ServoAX12
                             servo.config.positions[0]);
                     // on le met à la position courante pour éviter de donner un ordre non voulu
                     servo.position = servo.command_position = (int)presentPosition;
+                    servo.speed = 0;
+                    servo.command_speed = 0;
                     servo.initialized = true;
                     servo.failureCount = 0;
                     servo.initState++;
@@ -250,6 +254,42 @@ namespace ServoAX12
             }
             else
                 servo.position = (int)position;
+            
+            float speed = dxl.getPresentSpeed(servo.config.ax12Id, UNIT_PERCENT);
+            if (dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
+            {
+                servo.failureCount++;
+            }
+            else
+                servo.speed = (int)speed;
+        }
+
+        // Send Set servo speed if not already send
+        if (!servo.goalSpeedAcked)
+        {
+            if (!simulation)
+                servo.goalSpeedAcked = dxl.setMovingSpeed(
+                    servo.config.ax12Id, (float)servo.command_speed, UNIT_PERCENT);
+            else
+                servo.goalSpeedAcked = true;
+            if (!servo.goalSpeedAcked)
+            {
+                servo.failureCount++;
+            }
+        }
+        
+        // Send Set servo position if not already send
+        if (!servo.goalPositionAcked)
+        {
+            if (!simulation)
+                servo.goalPositionAcked = dxl.setGoalPosition(
+                    servo.config.ax12Id, (float)servo.command_position, UNIT_DEGREE);
+            else
+                servo.goalPositionAcked = true;
+            if (!servo.goalPositionAcked)
+            {
+                servo.failureCount++;
+            }
         }
 
         // On considère que le servo est en mouvement s'il est à plus ou moins de 5 degrés de la position commandée
@@ -265,19 +305,6 @@ namespace ServoAX12
                     dxl.ledOn(servo.config.ax12Id);
             }
             servo.IsMoving = true;
-
-            if (!servo.goalPositionAcked)
-            {
-                if (!simulation)
-                    servo.goalPositionAcked = dxl.setGoalPosition(
-                        servo.config.ax12Id, servo.command_position, UNIT_DEGREE);
-                else
-                    servo.goalPositionAcked = true;
-                if (!servo.goalPositionAcked)
-                {
-                    servo.failureCount++;
-                }
-            }
         }
         else
         {
@@ -367,11 +394,40 @@ namespace ServoAX12
         // We set the command into the task, if power is not too low
     }
 
+    void SetServoSpeed(ServoID logicalId, int speed)
+    {
+        if (!ServoExists(logicalId))
+            return;
+        ServoMotion &servo = Servos.at(logicalId);
+
+        if(speed < 0 || speed > 100)
+            return;        
+
+        if(servo.command_speed == speed)
+        {
+            // same command, do nothing
+            return;            
+        }
+        
+        println("Servo ID : %i, Set speed from %d to %d", logicalId, servo.speed, speed);
+
+        servo.command_speed = speed;
+        servo.goalSpeedAcked = false;
+        // We set the command into the task, if power is not too low
+    }
+
     int GetServoPosition(ServoID logicalId)
     {
         if (!ServoExists(logicalId))
             return -1;
         return Servos.at(logicalId).position;
+    }
+
+    int GetServoSpeed(ServoID logicalId)
+    {
+        if (!ServoExists(logicalId))
+            return 0;
+        return Servos.at(logicalId).speed;
     }
 
     bool WriteControlTableItem(ControlTableItem::ControlTableItemIndex item,
@@ -426,7 +482,17 @@ namespace ServoAX12
         }
         else if (cmd.cmdEquals("AX12Pos"))
         {
-            if (cmd.size == 2)
+            if (cmd.size == 0)
+            {
+                PrintAllPosition();
+            }
+            else if (cmd.size == 1)
+            {
+                // AX12Pos:1
+                ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
+                PrintPosition(logicalId);
+            }
+            else if (cmd.size == 2)
             {
                 // AX12Pos:1:180
                 // AX12Pos:2:160
@@ -443,15 +509,33 @@ namespace ServoAX12
                     println("Servo ID %i is not initialized", logicalId);
                 }
             }
+        }
+        else if (cmd.cmdEquals("AX12Speed"))
+        {
+            if (cmd.size == 0)
+            {
+                PrintAllSpeed();
+            }
             else if (cmd.size == 1)
             {
-                // AX12Pos:1
+                // AX12Speed:1
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
-                PrintPosition(logicalId);
+                PrintSpeed(logicalId);
             }
-            else
+            else if (cmd.size == 2)
             {
-                PrintAllPosition();
+                // AX12Speed:1:50
+                ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
+                int speed = static_cast<int>(cmd.data[1]);
+                if (ServoExists(logicalId))
+                {
+                    println("Set Speed : %d", speed);
+                    SetServoSpeed(logicalId, speed);
+                }
+                else
+                {
+                    println("Servo ID %i is not initialized", logicalId);
+                }
             }
         }
         else if (cmd.cmdEquals("AX12Table"))
@@ -501,6 +585,10 @@ namespace ServoAX12
         Printer::println("      Set servo [id] to [position] (in degrees)");
         Printer::println("      If only 1 argument, print current position of the servo with the given id");
         Printer::println("      If no argument, print all currents positions");
+        Printer::println(" > AX12Speed:[id]:[speed]");
+        Printer::println("      Set speed of servo [id] to [speed] (in %)");
+        Printer::println("      If only 1 argument, print current speed of the servo with the given id");
+        Printer::println("      If no argument, print all currents speeds");
         Printer::println(" > AX12Stop");
         Printer::println("      Stop all servos (torque off)");
         Printer::println(" > AX12Start");
@@ -595,7 +683,7 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id), servo.position);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Pos", servo.position);
         }
     }
 
@@ -604,7 +692,25 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id), servo.position);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Pos", servo.position);
+        }
+    }
+    
+
+    void TeleplotAllSpeed()
+    {
+        for (auto &[servoKey, servo] : Servos)
+        {
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Speed", servo.position);
+        }
+    }
+
+    void TeleplotSpeed(ServoID logicalId)
+    {
+        if (ServoExists(logicalId))
+        {
+            auto &servo = Servos.at(logicalId);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Speed", servo.position);
         }
     }
 
@@ -612,7 +718,7 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            println("Servo_%s_%d : %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos : %d", servo.name, servo.config.ax12Id, servo.position);
         }
     }
 
@@ -621,10 +727,26 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            println("Servo_%s_%d : %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos : %d", servo.name, servo.config.ax12Id, servo.position);
         }
     }
 
+    void PrintAllSpeed()
+    {
+        for (auto &[servoKey, servo] : Servos)
+        {
+            println("Servo_%s_%d Speed : %d", servo.name, servo.config.ax12Id, servo.speed);
+        }
+    }
+    
+    void PrintSpeed(ServoID logicalId)
+    {
+        if (ServoExists(logicalId))
+        {
+            auto &servo = Servos.at(logicalId);
+            println("Servo_%s_%d Speed : %d", servo.name, servo.config.ax12Id, servo.speed);
+        }
+    }
 
     void PrintServoConfigs()
     {

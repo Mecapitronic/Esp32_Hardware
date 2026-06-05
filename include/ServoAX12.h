@@ -14,6 +14,7 @@ namespace ServoAX12
                       "ServoPositionCount exceeds MAX_SERVO_POSITIONS");
 
     // https://github.com/ROBOTIS-GIT/Dynamixel2Arduino/tree/master
+    // https://emanual.robotis.com/docs/en/dxl/ax/ax-12a/
 
     constexpr size_t MAX_BAUD = 5;
     const BaudRate dxlBaud[MAX_BAUD] = {BaudRate::BAUD_RATE_57600,
@@ -69,7 +70,9 @@ namespace ServoAX12
     /**
      * @brief Structure représentant l'état d'un servo moteur.
      * @param id Identifiant du servo moteur.
+     * @param name Nom du servo moteur.
      * @param position Position actuelle du servo moteur.
+     * @param speed Vitesse actuelle du servo moteur.
      * @param command_position Position cible du servo moteur.
      * @param ledState État de la LED du servo moteur (allumée en mouvement, éteinte sinon).
      * sinon).
@@ -78,12 +81,15 @@ namespace ServoAX12
     {
         String name = "";
         int position = 0;
+        int speed = 0;
         ServoConfig config = ServoConfig((uint8_t)Hardware_Config::ServoID::BroadCast, {0}, 1);
         int command_position = 0;
+        int command_speed = 0;
         bool IsMoving = false;
         bool ledState = false;
         Timeout timeOut;
         bool goalPositionAcked = false;
+        bool goalSpeedAcked = false;
         // Tracking d'état d'initialisation
         bool initialized = false;       // Servo connecté et prêt
         int initState = 0;
@@ -147,8 +153,12 @@ namespace ServoAX12
 
     void TeleplotAllPosition();
     void TeleplotPosition(Hardware_Config::ServoID logicalId);
+    void TeleplotAllSpeed();
+    void TeleplotSpeed(Hardware_Config::ServoID logicalId);
     void PrintAllPosition();
     void PrintPosition(Hardware_Config::ServoID logicalId);
+    void PrintAllSpeed();
+    void PrintSpeed(Hardware_Config::ServoID logicalId);
 } // namespace ServoAX12
 
 namespace std
