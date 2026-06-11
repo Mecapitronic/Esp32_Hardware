@@ -26,15 +26,17 @@ namespace ServoAX12
 
         // AX12 init sequence order, indexed by servo.initState
         constexpr ServoInitStep kServoInitSteps[] = {
+            {ControlTableItem::ControlTableItemIndex::DXL_LED, 1},
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 0},
             {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0}, //EEPROM, 0 by default
             {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023}, //EEPROM, 1023 by default
-            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 200},
             {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200}, //EEPROM, 1023 by default
+            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 200}, // Max Torque at power up
             {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 8},
             {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 8},
             {ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 200},
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 1},
+            {ControlTableItem::ControlTableItemIndex::DXL_LED, 0},
         };
         constexpr uint8_t kServoInitStepCount =
             sizeof(kServoInitSteps) / sizeof(kServoInitSteps[0]);
@@ -148,7 +150,8 @@ namespace ServoAX12
             return;
         }
 
-        if (dxl.ping(servo.config.ax12Id))
+        // sometimes does not work ... disable it for now
+        //if (dxl.ping(servo.config.ax12Id))
         {
             int id = servo.config.ax12Id;
             while (servo.initState < kServoInitStepCount)
@@ -166,19 +169,12 @@ namespace ServoAX12
             {
                 float presentPosition =
                     dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
-                if (presentPosition == 0.0f
-                    && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
+                if (presentPosition == 0.0f)
                 {
                     servo.failureCount++;
                 }
                 else
                 {
-
-                    println("Servo %s %d at position: %d go to %d - Init Done !",
-                            servo.name,
-                            servo.config.ax12Id,
-                            servo.position,
-                            servo.config.positions[0]);
                     // on le met à la position courante pour éviter de donner un ordre non voulu
                     servo.position = servo.command_position = (int)presentPosition;
                     servo.speed = 0;
@@ -186,14 +182,29 @@ namespace ServoAX12
                     servo.initialized = true;
                     servo.failureCount = 0;
                     servo.initState++;
+
+                    println("Servo %s %d at position: %d - Init Done !",
+                            servo.name,
+                            servo.config.ax12Id,
+                            servo.position);
                 }
             }
+            else
+            {
+                servo.failureCount++;
+                DXLLibErrorCode dxlLibOk = DXLLibErrorCode::DXL_LIB_OK;
+                println("Failed to init Servo %s %d at step %d, error code %d",
+                        servo.name,
+                        servo.config.ax12Id,
+                        servo.initState,
+                        dxl.getLastLibErrCode());
+            }
         }
-        else
-        {
-            servo.failureCount++;
-            println(" NOT connected! (attempt %d)", servo.failureCount);
-        }
+        // else
+        // {
+        //     servo.failureCount++;
+        //     println(" NOT connected! (attempt %d)", servo.failureCount);
+        // }
     }
 
     void AddServo(ServoID logicalId, String name, const ServoConfig &defaults)
@@ -235,31 +246,45 @@ namespace ServoAX12
         // On récupère la position actuelle du servo
         if (simulation)
         {
+            servo.speed = servo.command_speed;
             if(servo.command_position != servo.position)
             {
-                // Update every 10ms, so 100 deg in 1 sec
+                // Update every 10ms, so 100 deg in 1 sec for 100% speed
                 if(servo.command_position - servo.position > 0)
-                    servo.position++;
+                {
+                    servo.positionSimulationIncrement += (float)(servo.speed) / 100;
+                    if(servo.positionSimulationIncrement > (float)(servo.command_position - servo.position))
+                    {
+                        servo.positionSimulationIncrement = (float)(servo.command_position - servo.position);
+                    }
+                }
                 else
-                    servo.position--;
+                {
+                    servo.positionSimulationIncrement -= (float)(servo.speed) / 100;
+                    if(servo.positionSimulationIncrement < (float)(servo.command_position - servo.position))
+                    {
+                        servo.positionSimulationIncrement = (float)(servo.command_position - servo.position);
+                    }
+                }
+                servo.position = (int)servo.positionSimulationIncrement;
             }
+            else
+                servo.positionSimulationIncrement = servo.position;
         }
         else
         {
             // sometimes : timeout at 100ms
             float position = dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
             if (position == 0.0f && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
-            {
                 servo.failureCount++;
-            }
             else
                 servo.position = (int)position;
             
             float speed = dxl.getPresentSpeed(servo.config.ax12Id, UNIT_PERCENT);
             if (dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
-            {
                 servo.failureCount++;
-            }
+            else if(speed == -100)
+                servo.speed = 0;
             else
                 servo.speed = (int)speed;
         }
@@ -268,8 +293,12 @@ namespace ServoAX12
         if (!servo.goalSpeedAcked)
         {
             if (!simulation)
-                servo.goalSpeedAcked = dxl.setMovingSpeed(
+            {
+                bool set = dxl.setMovingSpeed(
                     servo.config.ax12Id, (float)servo.command_speed, UNIT_PERCENT);
+                float movingSpeed = dxl.getMovingSpeed(servo.config.ax12Id, UNIT_PERCENT);
+                servo.goalSpeedAcked = set && (movingSpeed == (float)servo.command_speed);
+            }
             else
                 servo.goalSpeedAcked = true;
             if (!servo.goalSpeedAcked)
@@ -378,7 +407,7 @@ namespace ServoAX12
             return;
         }
 
-        println("Servo ID : %i, Set position from %d to %d", logicalId, servo.position, position);
+        println("Servo ID : %i, Set position from %d to %d", logicalId, servo.command_position, position);
         
         servo.command_position = position;
         servo.IsMoving = true;
@@ -409,7 +438,7 @@ namespace ServoAX12
             return;            
         }
         
-        println("Servo ID : %i, Set speed from %d to %d", logicalId, servo.speed, speed);
+        println("Servo ID : %i, Set speed from %d to %d", logicalId, servo.command_speed, speed);
 
         servo.command_speed = speed;
         servo.goalSpeedAcked = false;
@@ -447,6 +476,7 @@ namespace ServoAX12
             if (ret)
                 return true;
             retry++;
+            vTaskDelay(1);
         }
         return false;
     }
@@ -540,28 +570,49 @@ namespace ServoAX12
         }
         else if (cmd.cmdEquals("AX12Table"))
         {
-            // AX12Table:14
+            // AX12Table:34
+            // AX12Table:61:50
             if (cmd.size >= 1)
             {
                 for (const auto &[servoKey, servo] : Servos)
                 {
-                    println("Read Data %d : %d",
+                    println("Servo ID %d Read Data %d : %d",
+                            servo.config.ax12Id,
                             cmd.data[0],
                             dxl.readControlTableItem((uint8_t)cmd.data[0],
                                                      (uint8_t)servo.config.ax12Id));
+                    vTaskDelay(1);
                 }
             }
             if (cmd.size >= 2)
             {
                 for (const auto &[servoKey, servo] : Servos)
                 {
-                    println("Write Data %d : %d -> %d",
+                    println("Servo ID %d Write Data %d : %d -> %d",
+                            servo.config.ax12Id,
                             cmd.data[0],
                             cmd.data[1],
                             dxl.writeControlTableItem((uint8_t)cmd.data[0],
                                                       (uint8_t)servo.config.ax12Id,
                                                       cmd.data[1]));
+                    vTaskDelay(1);
                 }
+            }
+        }
+        else if (cmd.cmdEquals("AX12Stop"))
+        {
+            println("Stopping all servos...");
+            for (const auto &[servoKey, servo] : Servos)
+            {
+                dxl.torqueOff(servo.config.ax12Id);
+            }
+        }
+        else if (cmd.cmdEquals("AX12Start"))
+        {
+            println("Starting all servos...");
+            for (const auto &[servoKey, servo] : Servos)
+            {
+                dxl.torqueOn(servo.config.ax12Id);
             }
         }
         else
@@ -701,7 +752,7 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Speed", servo.position);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Speed", servo.speed);
         }
     }
 
@@ -710,7 +761,7 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Speed", servo.position);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Speed", servo.speed);
         }
     }
 

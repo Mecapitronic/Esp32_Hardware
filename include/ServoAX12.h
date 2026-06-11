@@ -96,6 +96,8 @@ namespace ServoAX12
         uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
         int failureCount = 0;           // Compteur d'erreurs consécutives
 
+        float positionSimulationIncrement = 0.0f;
+
         ServoMotion() = default;
 
         /**
