@@ -294,10 +294,17 @@ namespace ServoAX12
         {
             if (!simulation)
             {
+                int oldSpeedCmd = servo.command_speed;
                 bool set = dxl.setMovingSpeed(
                     servo.config.ax12Id, (float)servo.command_speed, UNIT_PERCENT);
                 float movingSpeed = dxl.getMovingSpeed(servo.config.ax12Id, UNIT_PERCENT);
                 servo.goalSpeedAcked = set && (movingSpeed == (float)servo.command_speed);
+                println("Set Speed for Servo ID %i from %d to %d : %s (movingSpeed: %f)",
+                        servo.config.ax12Id,
+                        oldSpeedCmd,
+                        servo.command_speed,
+                        servo.goalSpeedAcked ? "ACK" : "NACK",
+                        movingSpeed);
             }
             else
                 servo.goalSpeedAcked = true;
@@ -311,8 +318,15 @@ namespace ServoAX12
         if (!servo.goalPositionAcked)
         {
             if (!simulation)
+            {
                 servo.goalPositionAcked = dxl.setGoalPosition(
                     servo.config.ax12Id, (float)servo.command_position, UNIT_DEGREE);
+                println("Set Position for Servo ID %i from %d to %d : %s",
+                        servo.config.ax12Id,
+                        servo.position,
+                        servo.command_position,
+                        servo.goalPositionAcked ? "ACK" : "NACK");
+            }
             else
                 servo.goalPositionAcked = true;
             if (!servo.goalPositionAcked)
@@ -429,7 +443,7 @@ namespace ServoAX12
             return;
         ServoMotion &servo = Servos.at(logicalId);
 
-        if(speed < 0 || speed > 100)
+        if(speed < -100 || speed > 100)
             return;        
 
         if(servo.command_speed == speed)
@@ -770,6 +784,7 @@ namespace ServoAX12
         for (auto &[servoKey, servo] : Servos)
         {
             println("Servo_%s_%d Pos : %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos Cmd : %d", servo.name, servo.config.ax12Id, servo.command_position);
         }
     }
 
@@ -779,6 +794,7 @@ namespace ServoAX12
         {
             auto &servo = Servos.at(logicalId);
             println("Servo_%s_%d Pos : %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos Cmd : %d", servo.name, servo.config.ax12Id, servo.command_position);
         }
     }
 
@@ -787,6 +803,7 @@ namespace ServoAX12
         for (auto &[servoKey, servo] : Servos)
         {
             println("Servo_%s_%d Speed : %d", servo.name, servo.config.ax12Id, servo.speed);
+            println("Servo_%s_%d Speed Cmd : %d", servo.name, servo.config.ax12Id, servo.command_speed);
         }
     }
     
@@ -796,6 +813,7 @@ namespace ServoAX12
         {
             auto &servo = Servos.at(logicalId);
             println("Servo_%s_%d Speed : %d", servo.name, servo.config.ax12Id, servo.speed);
+            println("Servo_%s_%d Speed Cmd : %d", servo.name, servo.config.ax12Id, servo.command_speed);
         }
     }
 
