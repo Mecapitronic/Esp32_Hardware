@@ -65,7 +65,7 @@ namespace Match
         numPami = num;
         Preferences_Helper::SaveToPreference("NumPami", numPami);
         println("Set N° PAMI %i", numPami);
-        Wifi_Helper::SetLocalIP("192.168.43." + String(100 + numPami));
+        Wifi_Helper::SetLocalIP(100 + numPami);
     }
 
     int GetNumPami()
