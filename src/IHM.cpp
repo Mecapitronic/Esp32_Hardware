@@ -43,11 +43,11 @@ namespace IHM
         tirettePresent = !digitalRead(Hardware_Config::PIN_START);
         if (tirettePresent == 1)
         {
-            println("Tirette : Présente au démarrage");
+            println("Tirette Présente au démarrage");
         }
         else
         {
-            println("Tirette : Absente au démarrage");
+            println("Tirette Absente au démarrage");
         }
 
         builtInLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
@@ -197,7 +197,7 @@ namespace IHM
 
     void PrintTeam()
     {
-        print("Team    : ");
+        print("Team    ");
         if (team == Team::Bleu)
             println("Bleu");
         else if (team == Team::Jaune)
@@ -206,7 +206,7 @@ namespace IHM
 
     void PrintSwitch()
     {
-        print("Switch  : ");
+        print("Switch  ");
         if (switchMode == 1)
             println("MATCH");
         else
@@ -215,7 +215,7 @@ namespace IHM
 
     void PrintBAU()
     {
-        print("BAU     : ");
+        print("BAU     ");
         if (bauReady == 1)
             println("Retiré");
         else
@@ -224,7 +224,7 @@ namespace IHM
 
     void PrintStart()
     {
-        print("Tirette : ");
+        print("Tirette ");
         if (tirettePresent == 1)
             println("Insérée");
         else if (tirettePresent == 0)

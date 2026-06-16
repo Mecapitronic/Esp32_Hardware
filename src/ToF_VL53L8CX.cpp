@@ -89,7 +89,7 @@ namespace ToF_VL53L8CX
             }
 
             float timeTaken = (stopTime - startTime) / 1000.0;
-            println("Firmware transfer time: %0.3f s", timeTaken);
+            println("Firmware transfer time %0.3f s", timeTaken);
 
             sensor.set_resolution(DEFAULT_RESOLUTION); // Enable all 64 pads (8x8)
 
@@ -275,7 +275,7 @@ namespace ToF_VL53L8CX
     void printFormattedOutput()
     {
         // Print formatted output
-        println("Full distance grid (mm):");
+        println("Full distance grid (mm)");
         // Pretty-print data with increasing y, decreasing x to reflect reality
         for (int y = 0; y <= imageWidth * (imageWidth - 1); y += imageWidth)
         {

@@ -17,10 +17,10 @@ void setup(void)
 void loop(void)
 {
     /*
-        println("Bus Voltage:   %f V",Power::getBusVoltage_V());
-        println("Shunt Voltage: %f mV",Power::getShuntVoltage_mV());
-        println("Current:       %f mA",Power::getCurrent_mA());
-        println("Power:         %f mW",Power::getPower_mW());
+        println("Bus Voltage   %f V",Power::getBusVoltage_V());
+        println("Shunt Voltage %f mV",Power::getShuntVoltage_mV());
+        println("Current       %f mA",Power::getCurrent_mA());
+        println("Power         %f mW",Power::getPower_mW());
         println("");
     */
     /*

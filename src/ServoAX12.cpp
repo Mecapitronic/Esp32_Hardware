@@ -132,7 +132,7 @@ namespace ServoAX12
             return;
         }
 
-        println("Init Servo ID : %i name : %s - Init State %d",
+        println("Init Servo ID %i name %s - Init State %d",
                 servo.config.ax12Id,
                 servo.name.c_str(),
                 servo.initState);
@@ -143,7 +143,7 @@ namespace ServoAX12
             servo.command_speed = 50;
             servo.initialized = true;
             servo.failureCount = 0;
-            println("Servo %s %d position: %d [SIM]",
+            println("Servo %s %d position %d [SIM]",
                     servo.name.c_str(),
                     servo.config.ax12Id,
                     servo.position);
@@ -183,7 +183,7 @@ namespace ServoAX12
                     servo.failureCount = 0;
                     servo.initState++;
 
-                    println("Servo %s %d at position: %d - Init Done !",
+                    println("Servo %s %d at position %d - Init Done !",
                             servo.name,
                             servo.config.ax12Id,
                             servo.position);
@@ -273,7 +273,7 @@ namespace ServoAX12
         }
         else
         {
-            // sometimes : timeout at 100ms
+            // sometimes timeout at 100ms
             float position = dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
             if (position == 0.0f && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
                 servo.failureCount++;
@@ -299,7 +299,7 @@ namespace ServoAX12
                     servo.config.ax12Id, (float)servo.command_speed, UNIT_PERCENT);
                 float movingSpeed = dxl.getMovingSpeed(servo.config.ax12Id, UNIT_PERCENT);
                 servo.goalSpeedAcked = set && (movingSpeed == (float)servo.command_speed);
-                println("Set Speed for Servo ID %i from %d to %d : %s (movingSpeed: %f)",
+                println("Set Speed for Servo ID %i from %d to %d %s (movingSpeed %f)",
                         servo.config.ax12Id,
                         oldSpeedCmd,
                         servo.command_speed,
@@ -321,7 +321,7 @@ namespace ServoAX12
             {
                 servo.goalPositionAcked = dxl.setGoalPosition(
                     servo.config.ax12Id, (float)servo.command_position, UNIT_DEGREE);
-                println("Set Position for Servo ID %i from %d to %d : %s",
+                println("Set Position for Servo ID %i from %d to %d %s",
                         servo.config.ax12Id,
                         servo.position,
                         servo.command_position,
@@ -389,7 +389,7 @@ namespace ServoAX12
         size_t index = static_cast<size_t>(servoPosition);
         if (index >= servo.config.positionCount)
         {
-            println("SetServoPosition: index hors limite (%d >= %d)", (int)index, (int)servo.config.positionCount);
+            println("SetServoPosition index hors limite (%d >= %d)", (int)index, (int)servo.config.positionCount);
             return;
         }
 
@@ -408,10 +408,10 @@ namespace ServoAX12
         GetPositionBounds(servo, minPos, maxPos);
         if (position < minPos || position > maxPos)
         {
-            println("Position out of range for Servo ID : %i", logicalId);
-            println("Position : %d", position);
-            println("Min : %d", minPos);
-            println("Max : %d", maxPos);
+            println("Position out of range for Servo ID %i", logicalId);
+            println("Position %d", position);
+            println("Min %d", minPos);
+            println("Max %d", maxPos);
             return;
         }
         
@@ -421,7 +421,7 @@ namespace ServoAX12
             return;
         }
 
-        println("Servo ID : %i, Set position from %d to %d", logicalId, servo.command_position, position);
+        println("Servo ID %i, Set position from %d to %d", logicalId, servo.command_position, position);
         
         servo.command_position = position;
         servo.IsMoving = true;
@@ -452,7 +452,7 @@ namespace ServoAX12
             return;            
         }
         
-        println("Servo ID : %i, Set speed from %d to %d", logicalId, servo.command_speed, speed);
+        println("Servo ID %i, Set speed from %d to %d", logicalId, servo.command_speed, speed);
 
         servo.command_speed = speed;
         servo.goalSpeedAcked = false;
@@ -481,7 +481,7 @@ namespace ServoAX12
         int retry = 0;
         while (retry < 3)
         {
-            println("WriteControlTableItem %d : %d for Servo ID %d (attempt %d)...",
+            println("WriteControlTableItem %d %d for Servo ID %d (attempt %d)...",
                     item,
                     value,
                     id,
@@ -541,11 +541,11 @@ namespace ServoAX12
                 // AX12Pos:1:180
                 // AX12Pos:2:160
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
-                print("AX12 Servo id: %i ", logicalId);
+                print("AX12 Servo id %i ", logicalId);
                 int position = static_cast<int>(cmd.data[1]);
                 if (ServoExists(logicalId))
                 {
-                    println("Set Position : %d", position);
+                    println("Set Position %d", position);
                     SetServoPosition(logicalId, position);
                 }
                 else
@@ -573,7 +573,7 @@ namespace ServoAX12
                 int speed = static_cast<int>(cmd.data[1]);
                 if (ServoExists(logicalId))
                 {
-                    println("Set Speed : %d", speed);
+                    println("Set Speed %d", speed);
                     SetServoSpeed(logicalId, speed);
                 }
                 else
@@ -590,7 +590,7 @@ namespace ServoAX12
             {
                 for (const auto &[servoKey, servo] : Servos)
                 {
-                    println("Servo ID %d Read Data %d : %d",
+                    println("Servo ID %d Read Data %d %d",
                             servo.config.ax12Id,
                             cmd.data[0],
                             dxl.readControlTableItem((uint8_t)cmd.data[0],
@@ -602,7 +602,7 @@ namespace ServoAX12
             {
                 for (const auto &[servoKey, servo] : Servos)
                 {
-                    println("Servo ID %d Write Data %d : %d -> %d",
+                    println("Servo ID %d Write Data %d %d -> %d",
                             servo.config.ax12Id,
                             cmd.data[0],
                             cmd.data[1],
@@ -639,7 +639,7 @@ namespace ServoAX12
 
     void PrintCommandHelp()
     {
-        Printer::println("AX12 Command Help :");
+        Printer::println("AX12 Command Help");
         Printer::println(" > AX12Scan");
         Printer::println("      Scan all Dynamixel on all protocols and baudrates");
         Printer::println(" > AX12PrintInfo:[id]");
@@ -672,7 +672,7 @@ namespace ServoAX12
                 vTaskDelay(1);
             }
         }
-        println("Total : %i Dynamixel(s) found", found_dynamixel);
+        println("Total %i Dynamixel(s) found", found_dynamixel);
         return found_dynamixel;
     }
 
@@ -695,7 +695,7 @@ namespace ServoAX12
             // iterate until all ID in each baudrate is scanned.
             if (dxl.ping(id))
             {
-                println("ID : %i, Model Number: %i", id, dxl.getModelNumber(id));
+                println("ID %i, Model Number %i", id, dxl.getModelNumber(id));
                 found_dynamixel++;
             }
             vTaskDelay(1);
@@ -720,17 +720,17 @@ namespace ServoAX12
                 uint8_t ax12Id = servo.config.ax12Id;
                 if (dxl.ping(ax12Id))
                 {
-                        println("ID : %i, Name: %s, Model Number: %i, position: %d, command: %d, isMoving: %i",
+                        println("ID %i, Name %s, Model Number %i, position %d, command %d, isMoving %i",
                             ax12Id, servo.name, dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
                 }
                 else
                 {
-                    println("Dynamixel ID : %i not found", ax12Id);
+                    println("Dynamixel ID %i not found", ax12Id);
                 }
             }
             else
             {
-                println("Dynamixel ID : %i not found", (uint8_t)logicalId);
+                println("Dynamixel ID %i not found", (uint8_t)logicalId);
             }
         }
         else
@@ -738,7 +738,7 @@ namespace ServoAX12
             for (const auto &[_id, servo] : Servos)
             {
                 uint8_t ax12Id = servo.config.ax12Id;
-                println("ID : %i, Name: %s, Model Number: %i, position: %d, command: %d, isMoving: %i",
+                println("ID %i, Name %s, Model Number %i, position %d, command %d, isMoving %i",
                         ax12Id, servo.name, dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
             }
         }
@@ -783,8 +783,8 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            println("Servo_%s_%d Pos : %d", servo.name, servo.config.ax12Id, servo.position);
-            println("Servo_%s_%d Pos Cmd : %d", servo.name, servo.config.ax12Id, servo.command_position);
+            println("Servo_%s_%d Pos %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos Cmd %d", servo.name, servo.config.ax12Id, servo.command_position);
         }
     }
 
@@ -793,8 +793,8 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            println("Servo_%s_%d Pos : %d", servo.name, servo.config.ax12Id, servo.position);
-            println("Servo_%s_%d Pos Cmd : %d", servo.name, servo.config.ax12Id, servo.command_position);
+            println("Servo_%s_%d Pos %d", servo.name, servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos Cmd %d", servo.name, servo.config.ax12Id, servo.command_position);
         }
     }
 
@@ -802,8 +802,8 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            println("Servo_%s_%d Speed : %d", servo.name, servo.config.ax12Id, servo.speed);
-            println("Servo_%s_%d Speed Cmd : %d", servo.name, servo.config.ax12Id, servo.command_speed);
+            println("Servo_%s_%d Speed %d", servo.name, servo.config.ax12Id, servo.speed);
+            println("Servo_%s_%d Speed Cmd %d", servo.name, servo.config.ax12Id, servo.command_speed);
         }
     }
     
@@ -812,14 +812,14 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            println("Servo_%s_%d Speed : %d", servo.name, servo.config.ax12Id, servo.speed);
-            println("Servo_%s_%d Speed Cmd : %d", servo.name, servo.config.ax12Id, servo.command_speed);
+            println("Servo_%s_%d Speed %d", servo.name, servo.config.ax12Id, servo.speed);
+            println("Servo_%s_%d Speed Cmd %d", servo.name, servo.config.ax12Id, servo.command_speed);
         }
     }
 
     void PrintServoConfigs()
     {
-        println("Servo Configs (%d servos):", Servos.size());
+        println("Servo Configs (%d servos)", Servos.size());
         for (const auto &[servoKey, servo] : Servos)
         {
             String line = "  " + servo.name + ": ax12Id=" + String(servo.config.ax12Id) + " cnt=" + String(servo.config.positionCount) + " pos=[";
