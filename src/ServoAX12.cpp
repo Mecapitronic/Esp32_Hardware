@@ -459,6 +459,28 @@ namespace ServoAX12
         // We set the command into the task, if power is not too low
     }
 
+    void SetTorqueLimit(ServoID logicalId, int torqueLimit)
+    {
+        if (!ServoExists(logicalId))
+            return;
+        ServoMotion &servo = Servos.at(logicalId);
+
+        if(torqueLimit < 0 || torqueLimit > 100)
+            return;        
+
+        println("Servo ID %i, Set torque limit to %d", logicalId, torqueLimit);
+
+        if (!simulation)
+        {
+            if (!WriteControlTableItem(ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT,
+                                       servo.config.ax12Id,
+                                       torqueLimit * 1023 / 100)) // Convert percentage to value (0-1023)
+            {
+                println("Failed to set torque limit for Servo ID %i", logicalId);
+            }
+        }
+    }
+
     int GetServoPosition(ServoID logicalId)
     {
         if (!ServoExists(logicalId))
@@ -530,12 +552,6 @@ namespace ServoAX12
             {
                 PrintAllPosition();
             }
-            else if (cmd.size == 1)
-            {
-                // AX12Pos:1
-                ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
-                PrintPosition(logicalId);
-            }
             else if (cmd.size == 2)
             {
                 // AX12Pos:1:180
@@ -560,12 +576,6 @@ namespace ServoAX12
             {
                 PrintAllSpeed();
             }
-            else if (cmd.size == 1)
-            {
-                // AX12Speed:1
-                ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
-                PrintSpeed(logicalId);
-            }
             else if (cmd.size == 2)
             {
                 // AX12Speed:1:50
@@ -580,6 +590,20 @@ namespace ServoAX12
                 {
                     println("Servo ID %i is not initialized", logicalId);
                 }
+            }
+        }
+        else if (cmd.cmdEquals("AX12Torque"))
+        {
+            if (cmd.size == 0)
+            {
+                PrintAllTorqueLimit();
+            }
+            else if (cmd.size == 2)
+            {
+                // AX12Torque:1:50
+                ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
+                int torqueLimit = static_cast<int>(cmd.data[1]);
+                SetTorqueLimit(logicalId, torqueLimit);
             }
         }
         else if (cmd.cmdEquals("AX12Table"))
@@ -648,12 +672,13 @@ namespace ServoAX12
         Printer::println("      Print current config of all registered servos");
         Printer::println(" > AX12Pos:[id]:[position]");
         Printer::println("      Set servo [id] to [position] (in degrees)");
-        Printer::println("      If only 1 argument, print current position of the servo with the given id");
         Printer::println("      If no argument, print all currents positions");
         Printer::println(" > AX12Speed:[id]:[speed]");
         Printer::println("      Set speed of servo [id] to [speed] (in %)");
-        Printer::println("      If only 1 argument, print current speed of the servo with the given id");
-        Printer::println("      If no argument, print all currents speeds");
+        Printer::println("      If no argument, print all current speeds");
+        Printer::println(" > AX12Torque:[id]:[torque]");
+        Printer::println("      Set torque limit of servo [id] to [torque] (in %");
+        Printer::println("      If no argument, print all torque limits");
         Printer::println(" > AX12Stop");
         Printer::println("      Stop all servos (torque off)");
         Printer::println(" > AX12Start");
@@ -814,6 +839,15 @@ namespace ServoAX12
             auto &servo = Servos.at(logicalId);
             println("Servo_%s_%d Speed %d", servo.name, servo.config.ax12Id, servo.speed);
             println("Servo_%s_%d Speed Cmd %d", servo.name, servo.config.ax12Id, servo.command_speed);
+        }
+    }
+    
+    void PrintAllTorqueLimit()
+    {
+        for (auto &[servoKey, servo] : Servos)
+        {
+            int torqueLimit = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, servo.config.ax12Id);
+            println("Servo_%s_%d Torque Limit %d", servo.name, servo.config.ax12Id, torqueLimit);
         }
     }
 

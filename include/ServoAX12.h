@@ -151,8 +151,6 @@ namespace ServoAX12
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
     void PrintDxlInfo(Hardware_Config::ServoID logicalId = Hardware_Config::ServoID::BroadCast);
 
-    void PrintServoConfigs();
-
     void TeleplotAllPosition();
     void TeleplotPosition(Hardware_Config::ServoID logicalId);
     void TeleplotAllSpeed();
@@ -161,6 +159,8 @@ namespace ServoAX12
     void PrintPosition(Hardware_Config::ServoID logicalId);
     void PrintAllSpeed();
     void PrintSpeed(Hardware_Config::ServoID logicalId);
+    void PrintAllTorqueLimit();    
+    void PrintServoConfigs();
 } // namespace ServoAX12
 
 namespace std
