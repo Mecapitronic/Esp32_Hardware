@@ -184,7 +184,7 @@ namespace ServoAX12
                     servo.initState++;
 
                     println("Servo %s %d at position %d - Init Done !",
-                            servo.name,
+                            servo.name.c_str(),
                             servo.config.ax12Id,
                             servo.position);
                 }
@@ -194,7 +194,7 @@ namespace ServoAX12
                 servo.failureCount++;
                 DXLLibErrorCode dxlLibOk = DXLLibErrorCode::DXL_LIB_OK;
                 println("Failed to init Servo %s %d at step %d, error code %d",
-                        servo.name,
+                    servo.name.c_str(),
                         servo.config.ax12Id,
                         servo.initState,
                         dxl.getLastLibErrCode());
@@ -746,7 +746,7 @@ namespace ServoAX12
                 if (dxl.ping(ax12Id))
                 {
                         println("ID %i, Name %s, Model Number %i, position %d, command %d, isMoving %i",
-                            ax12Id, servo.name, dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
+                            ax12Id, servo.name.c_str(), dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
                 }
                 else
                 {
@@ -764,7 +764,7 @@ namespace ServoAX12
             {
                 uint8_t ax12Id = servo.config.ax12Id;
                 println("ID %i, Name %s, Model Number %i, position %d, command %d, isMoving %i",
-                        ax12Id, servo.name, dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
+                    ax12Id, servo.name.c_str(), dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
             }
         }
     }
@@ -808,8 +808,8 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            println("Servo_%s_%d Pos %d", servo.name, servo.config.ax12Id, servo.position);
-            println("Servo_%s_%d Pos Cmd %d", servo.name, servo.config.ax12Id, servo.command_position);
+            println("Servo_%s_%d Pos %d", servo.name.c_str(), servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos Cmd %d", servo.name.c_str(), servo.config.ax12Id, servo.command_position);
         }
     }
 
@@ -818,8 +818,8 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            println("Servo_%s_%d Pos %d", servo.name, servo.config.ax12Id, servo.position);
-            println("Servo_%s_%d Pos Cmd %d", servo.name, servo.config.ax12Id, servo.command_position);
+            println("Servo_%s_%d Pos %d", servo.name.c_str(), servo.config.ax12Id, servo.position);
+            println("Servo_%s_%d Pos Cmd %d", servo.name.c_str(), servo.config.ax12Id, servo.command_position);
         }
     }
 
@@ -827,8 +827,8 @@ namespace ServoAX12
     {
         for (auto &[servoKey, servo] : Servos)
         {
-            println("Servo_%s_%d Speed %d", servo.name, servo.config.ax12Id, servo.speed);
-            println("Servo_%s_%d Speed Cmd %d", servo.name, servo.config.ax12Id, servo.command_speed);
+            println("Servo_%s_%d Speed %d", servo.name.c_str(), servo.config.ax12Id, servo.speed);
+            println("Servo_%s_%d Speed Cmd %d", servo.name.c_str(), servo.config.ax12Id, servo.command_speed);
         }
     }
     
@@ -837,8 +837,8 @@ namespace ServoAX12
         if (ServoExists(logicalId))
         {
             auto &servo = Servos.at(logicalId);
-            println("Servo_%s_%d Speed %d", servo.name, servo.config.ax12Id, servo.speed);
-            println("Servo_%s_%d Speed Cmd %d", servo.name, servo.config.ax12Id, servo.command_speed);
+            println("Servo_%s_%d Speed %d", servo.name.c_str(), servo.config.ax12Id, servo.speed);
+            println("Servo_%s_%d Speed Cmd %d", servo.name.c_str(), servo.config.ax12Id, servo.command_speed);
         }
     }
     
@@ -847,7 +847,7 @@ namespace ServoAX12
         for (auto &[servoKey, servo] : Servos)
         {
             int torqueLimit = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, servo.config.ax12Id);
-            println("Servo_%s_%d Torque Limit %d", servo.name, servo.config.ax12Id, torqueLimit);
+            println("Servo_%s_%d Torque Limit %d", servo.name.c_str(), servo.config.ax12Id, torqueLimit);
         }
     }
 
