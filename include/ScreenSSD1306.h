@@ -8,17 +8,17 @@
 #include "ESP32_Hardware.h"
 
 /* Représentation ASCII de l'afficheur (128x64, 21 chars max/ligne, 8 lignes)
-   |0         1         2
-   |123456789012345678901
-___|_____________________
- 0 |TEST     BAU  0 BOOT
- 1 |JAUNE           000 s
- 2 | 
- 3 |X  200          AX12
- 4 |Y 1500        1:123.4
- 5 |A  180        2:123.4
- 6 | 
- 7 |ON  12.30V 12mA  WIFI
+   |0         1         2|
+   |123456789012345678901|
+___|_____________________|
+ 0 |TEST     BAU  0 BOOT |
+ 1 |JAUNE  ! Low !   000s|
+ 2 |Obs --------         |
+ 3 |X 200 X  200    AX12 |
+ 4 |Y 1500Y 1500 Bras:123|
+ 5 |A 180 A 180  VL53:123|
+ 6 |                     |
+ 7 |ON  12.30V 500mA WF-X|
 */
 
 namespace Screen
