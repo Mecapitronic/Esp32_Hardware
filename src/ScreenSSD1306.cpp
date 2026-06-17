@@ -306,7 +306,7 @@ namespace Screen
 
         String PoseAToText()
         {
-            return "A " + String(degrees(pose.h),0);
+            return "A " + String(pose.h);
         }
 
         Pose target = {0, 0, 0};
@@ -322,7 +322,7 @@ namespace Screen
 
         String TargetAToText()
         {
-            return "A " + String(degrees(target.h),0);
+            return "A " + String(target.h);
         }
 
 
