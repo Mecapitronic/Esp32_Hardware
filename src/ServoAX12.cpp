@@ -169,7 +169,11 @@ namespace ServoAX12
             {
                 float presentPosition =
                     dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
-                if (presentPosition == 0.0f)
+                println("Servo %s %d at position %0.2f",
+                    servo.name.c_str(),
+                    servo.config.ax12Id,
+                    presentPosition);
+                if (presentPosition <= 0.0f || presentPosition >= 300.0f)
                 {
                     servo.failureCount++;
                 }
@@ -275,18 +279,18 @@ namespace ServoAX12
         {
             // sometimes timeout at 100ms
             float position = dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
-            if (position == 0.0f && dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
+            if (position == 0.0f || dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
                 servo.failureCount++;
             else
                 servo.position = (int)position;
             
-            float speed = dxl.getPresentSpeed(servo.config.ax12Id, UNIT_PERCENT);
+            int speed = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::PRESENT_SPEED, servo.config.ax12Id);
             if (dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
                 servo.failureCount++;
-            else if(speed == -100)
-                servo.speed = 0;
-            else
-                servo.speed = (int)speed;
+            else if (speed >= 0 && speed <= 1023)
+                servo.speed = map(speed, 0, 1023, 0, -100);
+            else if (speed >= 1024 && speed <= 2047)
+                servo.speed = map(speed, 1024, 2047, 0, 100);
         }
 
         // Send Set servo speed if not already send
@@ -294,17 +298,11 @@ namespace ServoAX12
         {
             if (!simulation)
             {
-                int oldSpeedCmd = servo.command_speed;
-                bool set = dxl.setMovingSpeed(
-                    servo.config.ax12Id, (float)servo.command_speed, UNIT_PERCENT);
-                float movingSpeed = dxl.getMovingSpeed(servo.config.ax12Id, UNIT_PERCENT);
-                servo.goalSpeedAcked = set && (movingSpeed == (float)servo.command_speed);
-                println("Set Speed for Servo ID %i from %d to %d %s (movingSpeed %f)",
+                servo.goalSpeedAcked = dxl.writeControlTableItem(ControlTableItem::ControlTableItemIndex::MOVING_SPEED, servo.config.ax12Id, servo.command_speed*10.23f);
+                println("Set Speed for Servo ID %i to %d %% %s",
                         servo.config.ax12Id,
-                        oldSpeedCmd,
                         servo.command_speed,
-                        servo.goalSpeedAcked ? "ACK" : "NACK",
-                        movingSpeed);
+                        servo.goalSpeedAcked ? "ACK" : "NACK");
             }
             else
                 servo.goalSpeedAcked = true;
@@ -336,7 +334,7 @@ namespace ServoAX12
         }
 
         // On considère que le servo est en mouvement s'il est à plus ou moins de 5 degrés de la position commandée
-        // on allume la LED pour indiquer qu'une commande est en cours
+        // on allume la LED pour indiquer qu'une commande de position est en cours
         // Si on a indiqué un timeOut à la commande, on considère que le servo est en mouvement tant que le timeOut n'est pas expiré
         // à la fin du timeOut (si != 0), le servo sera considéré arrivé (pour éviter de bloquer le code)
         if ((servo.position >= servo.command_position + 5 || servo.position <= servo.command_position - 5) && !servo.timeOut.IsTimeOut())
