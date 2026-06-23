@@ -173,9 +173,19 @@ namespace ServoAX12
                     servo.name.c_str(),
                     servo.config.ax12Id,
                     presentPosition);
-                if (presentPosition <= 0.0f || presentPosition >= 300.0f)
+                    
+                int minPos = 0;
+                int maxPos = 0;
+                GetPositionBounds(servo, minPos, maxPos);
+                if (presentPosition <= minPos || presentPosition >= maxPos)
                 {
                     servo.failureCount++;
+                    println("Unexpected position for Servo %s %d: %0.2f (expected between %d and %d)",
+                            servo.name.c_str(),
+                            servo.config.ax12Id,
+                            presentPosition,
+                            minPos,
+                            maxPos);
                 }
                 else
                 {
