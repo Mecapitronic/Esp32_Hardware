@@ -322,8 +322,10 @@ namespace ServoAX12
                     servo.torqueEnable = false;
                 }
             }
-            // Don't send any command if the BAU is engaged, to avoid moving the servo
-            return;
+            servo.command_position = servo.position;
+            servo.goalPositionAcked = true;
+            servo.command_speed = 0;
+            servo.goalSpeedAcked = true;
         }
         else
         {
@@ -568,7 +570,8 @@ namespace ServoAX12
 
     bool HandleCommand(Command cmd)
     {
-        // PrintTeleplot:0;AX12Torque:1:30;AX12Torque:2:15;AX12Speed:1:10;AX12Speed:2:80;AX12Pos:1:150;AX12Pos:2:160;Delay:2000;AX12Pos:1:280;AX12Pos:2:210
+        // PrintTeleplot:1;AX12Torque:1:30;AX12Torque:2:30;AX12Speed:1:30;AX12Speed:2:30;AX12Pos:1:150;AX12Pos:2:160;Delay:2000;AX12Pos:1:280;AX12Pos:2:210
+        // PrintTeleplot:0;AX12Torque:1:100;AX12Torque:2:100;AX12Speed:1:10;AX12Speed:2:10;AX12Pos:1:150;AX12Pos:2:160;Delay:2000;AX12Pos:1:280;AX12Pos:2:210
         if (cmd.cmdEquals("AX12Scan"))
         {
             // AX12Scan:1:1000000
