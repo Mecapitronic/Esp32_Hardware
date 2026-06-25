@@ -143,6 +143,7 @@ namespace ServoAX12
             servo.command_speed = 50;
             servo.initialized = true;
             servo.failureCount = 0;
+            servo.torqueEnable = true;
             println("Servo %s %d position %d [SIM]",
                     servo.name.c_str(),
                     servo.config.ax12Id,
@@ -195,6 +196,7 @@ namespace ServoAX12
                     servo.command_speed = 0;
                     servo.initialized = true;
                     servo.failureCount = 0;
+                    servo.torqueEnable = true;
                     servo.initState++;
 
                     println("Servo %s %d at position %d - Init Done !",
@@ -251,7 +253,7 @@ namespace ServoAX12
         }
 
         // Vérifier la tension avant de faire une opération I2C
-        if (Power::isLowVoltage() || !IHM::bauReady)
+        if (Power::isLowVoltage())
         {
             // servo.IsMoving = false;
             return;
@@ -301,6 +303,43 @@ namespace ServoAX12
                 servo.speed = map(speed, 0, 1023, 0, -100);
             else if (speed >= 1024 && speed <= 2047)
                 servo.speed = map(speed, 1024, 2047, 0, 100);
+        }
+
+        // Stop the torque if the BAU is engaged
+        // TODO It will stop the movement instantly but the movement will not resume after BAU is released
+        if(!IHM::bauReady)
+        {
+            if(servo.torqueEnable)
+            {
+                println("Stopping the servo %s ID %d because of BAU", servo.name.c_str(), servo.config.ax12Id);
+                if (!simulation)
+                {
+                    dxl.torqueOff(servo.config.ax12Id);
+                    servo.torqueEnable = (bool)dxl.getTorqueEnableStat(servo.config.ax12Id);
+                }
+                else
+                {
+                    servo.torqueEnable = false;
+                }
+            }
+            // Don't send any command if the BAU is engaged, to avoid moving the servo
+            return;
+        }
+        else
+        {
+            if(!servo.torqueEnable)
+            {
+                println("Re-enabling the servo %s ID %d because of BAU", servo.name.c_str(), servo.config.ax12Id);
+                if (!simulation)
+                {
+                    dxl.torqueOn(servo.config.ax12Id);
+                    servo.torqueEnable = (bool)dxl.getTorqueEnableStat(servo.config.ax12Id);
+                }
+                else
+                {
+                    servo.torqueEnable = true;
+                }
+            }
         }
 
         // Send Set servo speed if not already send
