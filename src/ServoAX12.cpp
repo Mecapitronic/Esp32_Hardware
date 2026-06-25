@@ -347,7 +347,9 @@ namespace ServoAX12
         {
             if (!simulation)
             {
-                servo.goalSpeedAcked = dxl.writeControlTableItem(ControlTableItem::ControlTableItemIndex::MOVING_SPEED, servo.config.ax12Id, servo.command_speed*10.23f);
+                servo.goalSpeedAcked = dxl.writeControlTableItem(ControlTableItem::ControlTableItemIndex::MOVING_SPEED,
+                    servo.config.ax12Id,
+                    servo.command_speed * 1023 / 100);
                 println("Set Speed for Servo ID %i to %d %% %s",
                         servo.config.ax12Id,
                         servo.command_speed,
@@ -490,13 +492,13 @@ namespace ServoAX12
             return;
         ServoMotion &servo = Servos.at(logicalId);
 
-        if(speed < -100 || speed > 100)
+        if(speed < 0 || speed > 100)
             return;        
 
         if(servo.command_speed == speed)
         {
             // same command, do nothing
-            return;            
+            return;
         }
         
         println("Servo ID %i, Set speed from %d to %d", logicalId, servo.command_speed, speed);
@@ -566,6 +568,7 @@ namespace ServoAX12
 
     bool HandleCommand(Command cmd)
     {
+        // PrintTeleplot:0;AX12Torque:1:30;AX12Torque:2:15;AX12Speed:1:10;AX12Speed:2:80;AX12Pos:1:150;AX12Pos:2:160;Delay:2000;AX12Pos:1:280;AX12Pos:2:210
         if (cmd.cmdEquals("AX12Scan"))
         {
             // AX12Scan:1:1000000
@@ -603,6 +606,8 @@ namespace ServoAX12
             {
                 // AX12Pos:1:180
                 // AX12Pos:2:160
+                // AX12Pos:1:180;AX12Pos:2:160
+                // AX12Pos:1:180;AX12Pos:2:160
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
                 print("AX12 Servo id %i ", logicalId);
                 int position = static_cast<int>(cmd.data[1]);
@@ -655,8 +660,10 @@ namespace ServoAX12
         }
         else if (cmd.cmdEquals("AX12Table"))
         {
-            // AX12Table:34
-            // AX12Table:61:50
+            // TORQUE_ENABLE AX12Table:34
+            // TORQUE_LIMIT AX12Table:70
+            // MOVING_SPEED AX12Table:61
+            // PRESENT_POSITION AX12Table:66
             if (cmd.size >= 1)
             {
                 for (const auto &[servoKey, servo] : Servos)
