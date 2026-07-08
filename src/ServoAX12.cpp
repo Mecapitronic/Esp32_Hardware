@@ -28,6 +28,7 @@ namespace ServoAX12
         constexpr ServoInitStep kServoInitSteps[] = {
             {ControlTableItem::ControlTableItemIndex::DXL_LED, 1},
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 0},
+            {ControlTableItem::ControlTableItemIndex::TEMPERATURE_LIMIT, 70}, //EEPROM, 70 by default
             {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0}, //EEPROM, 0 by default
             {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023}, //EEPROM, 1023 by default
             {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200}, //EEPROM, 1023 by default
@@ -158,6 +159,21 @@ namespace ServoAX12
             while (servo.initState < kServoInitStepCount)
             {
                 const ServoInitStep &step = kServoInitSteps[servo.initState];
+                int value = 0;
+                if(!ReadControlTableItem(step.item, id, value))
+                    break;
+                println("Servo %s ID %d init step %d: item %d read value %d, set value %d",
+                    servo.name.c_str(),
+                    id,
+                    servo.initState,
+                    step.item,
+                    value,
+                    step.value);
+                if(value == step.value)
+                {
+                    servo.initState++;
+                    continue;
+                }
                 if (!WriteControlTableItem(step.item, id, step.value))
                 {
                     break;
@@ -554,13 +570,34 @@ namespace ServoAX12
         int retry = 0;
         while (retry < 3)
         {
-            println("WriteControlTableItem %d %d for Servo ID %d (attempt %d)...",
-                    item,
-                    value,
-                    id,
-                    retry);
+            // println("WriteControlTableItem %d %d for Servo ID %d (attempt %d)...",
+            //         item,
+            //         value,
+            //         id,
+            //         retry);
             bool ret = dxl.writeControlTableItem(item, id, value, timeout);
             if (ret)
+                return true;
+            retry++;
+            vTaskDelay(1);
+        }
+        return false;
+    }
+
+    bool ReadControlTableItem(ControlTableItem::ControlTableItemIndex item,
+                              uint8_t id,
+                              int32_t &value,
+                              uint32_t timeout)
+    {
+        int retry = 0;
+        while (retry < 3)
+        {
+            // println("ReadControlTableItem %d for Servo ID %d (attempt %d)...",
+            //         item,
+            //         id,
+            //         retry);
+            value = dxl.readControlTableItem(item, id, timeout);
+            if (dxl.getLastLibErrCode() == DXLLibErrorCode::DXL_LIB_OK)
                 return true;
             retry++;
             vTaskDelay(1);

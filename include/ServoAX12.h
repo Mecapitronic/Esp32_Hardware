@@ -144,7 +144,11 @@ namespace ServoAX12
                                uint8_t id,
                                int32_t value,
                                uint32_t timeout = 10);
-
+    bool ReadControlTableItem(ControlTableItem::ControlTableItemIndex item,
+                              uint8_t id,
+                              int32_t &value,
+                              uint32_t timeout = 10);
+                              
     bool HandleCommand(Command cmd);
     void PrintCommandHelp();
 
