@@ -305,6 +305,7 @@ namespace ServoAX12
         }
         else
         {
+            // POSITION
             // sometimes timeout at 100ms
             float position = dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
             if (position == 0.0f || dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
@@ -312,6 +313,7 @@ namespace ServoAX12
             else
                 servo.position = (int)position;
             
+            // SPEED
             int speed = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::PRESENT_SPEED, servo.config.ax12Id);
             if (dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
                 servo.failureCount++;
@@ -319,6 +321,24 @@ namespace ServoAX12
                 servo.speed = map(speed, 0, 1023, 0, -100);
             else if (speed >= 1024 && speed <= 2047)
                 servo.speed = map(speed, 1024, 2047, 0, 100);
+
+            // LOAD
+            int32_t load = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::PRESENT_LOAD, servo.config.ax12Id);
+            if (dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
+                servo.failureCount++;
+            else if (load >= 0 && load <= 1023)
+                servo.load = map(load, 0, 1023, 0, -100);
+            else if (load >= 1024 && load <= 2047)
+                servo.load = map(load, 1024, 2047, 0, 100);
+
+            // ERROR
+            int32_t error = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::SHUTDOWN, servo.config.ax12Id);
+            servo.error = ServoError(error);
+            // if(error != 0)
+            // {
+            //     println("Servo %s ID %d error code: 0x%02X", servo.name.c_str(), servo.config.ax12Id, error);
+            //     servo.error.PrintError();
+            // }
         }
 
         // Stop the torque if the BAU is engaged
@@ -642,7 +662,7 @@ namespace ServoAX12
             {
                 PrintAllPosition();
             }
-            else if (cmd.size == 2)
+            else if (cmd.size >= 2)
             {
                 // AX12Pos:1:180
                 // AX12Pos:2:160
@@ -651,10 +671,20 @@ namespace ServoAX12
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
                 print("AX12 Servo id %i ", logicalId);
                 int position = static_cast<int>(cmd.data[1]);
+                int timeout = 0;
+                
                 if (ServoExists(logicalId))
                 {
-                    println("Set Position %d", position);
-                    SetServoPosition(logicalId, position);
+                    if(cmd.size >= 3)
+                    {
+                        timeout = static_cast<int>(cmd.data[2]);
+                        println("Set Servo %d Position %d with timeout %d", logicalId, position, timeout);
+                    }
+                    else
+                    {
+                        println("Set Servo %d Position %d", logicalId, position);
+                    }
+                    SetServoPosition(logicalId, position, timeout);
                 }
                 else
                 {
@@ -675,7 +705,7 @@ namespace ServoAX12
                 int speed = static_cast<int>(cmd.data[1]);
                 if (ServoExists(logicalId))
                 {
-                    println("Set Speed %d", speed);
+                    println("Set Servo %d Speed %d", logicalId, speed);
                     SetServoSpeed(logicalId, speed);
                 }
                 else
@@ -695,6 +725,7 @@ namespace ServoAX12
                 // AX12Torque:1:50
                 ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
                 int torqueLimit = static_cast<int>(cmd.data[1]);
+                println("Set Servo %d Torque Limit %d", logicalId, torqueLimit);
                 SetTorqueLimit(logicalId, torqueLimit);
             }
         }
@@ -745,6 +776,35 @@ namespace ServoAX12
             for (const auto &[servoKey, servo] : Servos)
             {
                 dxl.torqueOn(servo.config.ax12Id);
+            }
+        }
+        else if (cmd.cmdEquals("AX12Wait"))
+        {
+            if (cmd.size == 0)
+            {
+                println("Wait all servos...");
+                while (AreAllServoMoving())
+                {
+                    vTaskDelay(1);
+                }
+                println("All servos stopped moving");
+            }
+            else if (cmd.size == 1)
+            {
+                ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
+                if (ServoExists(logicalId))
+                {
+                    println("Wait Servo %d...", logicalId);
+                    while (IsServoMoving(logicalId))
+                    {
+                        vTaskDelay(1);
+                    }
+                    println("Servo %d stopped moving", logicalId);
+                }
+                else
+                {
+                    println("Servo ID %i is not initialized", logicalId);
+                }
             }
         }
         else
@@ -895,6 +955,40 @@ namespace ServoAX12
         {
             auto &servo = Servos.at(logicalId);
             teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Speed", servo.speed);
+        }
+    }
+
+    void TeleplotAllLoad()
+    {
+        for (auto &[servoKey, servo] : Servos)
+        {
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Load", servo.load);
+        }
+    }
+
+    void TeleplotLoad(ServoID logicalId)
+    {
+        if (ServoExists(logicalId))
+        {
+            auto &servo = Servos.at(logicalId);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Load", servo.load);
+        }
+    }
+
+    void TeleplotAllMoving()
+    {
+        for (auto &[servoKey, servo] : Servos)
+        {
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Moving", servo.IsMoving ? 1 : 0);
+        }        
+    }
+
+    void TeleplotMoving(ServoID logicalId)
+    {
+        if (ServoExists(logicalId))
+        {
+            auto &servo = Servos.at(logicalId);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Moving", servo.IsMoving ? 1 : 0);
         }
     }
 

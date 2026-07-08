@@ -67,6 +67,45 @@ namespace ServoAX12
         }
     };
 
+    /*
+    Bit 7 	0 	-
+    Bit 6 	Instruction Error 	Detects that undefined Instruction is transmitted or the ACTION command is delivered without the REG_WRITE command
+    Bit 5 	Overload Error 	Detects that persistent load exceeds maximum output
+    Bit 4 	CheckSum Error 	Detects that the Checksum of the transmitted Instruction Packet is invalid
+    Bit 3 	Range Error 	Detects that the command is given beyond the range of usage
+    Bit 2 	Overheating Error 	Detects that the internal temperature exceeds the set temperature
+    Bit 1 	Angle Limit Error 	Detects that Goal Position is written with the value that is not between CW Angle Limit and CCW Angle Limit
+    Bit 0 	Input Voltage Error 	Detects that input voltage exceeds the configured operating voltage
+    */
+    struct ServoError
+    {
+        union {
+            uint8_t errorCode = 0;
+            struct {
+                uint8_t 
+                notUsed:1,
+                instructionError:1,
+                overloadError:1,
+                checksumError:1,
+                rangeError:1,
+                overheatingError:1,
+                angleLimitError:1,
+                inputVoltageError:1;
+            };
+        };
+        ServoError() = default;
+
+        ServoError(int32_t errorByte)
+        {
+            errorCode = (uint8_t)errorByte;
+        }
+        void PrintError()
+        {
+            printf("ServoError %d 0x%02X: instructionError=%d, overloadError=%d, checksumError=%d, rangeError=%d, overheatingError=%d, angleLimitError=%d, inputVoltageError=%d\n",
+                errorCode, errorCode, instructionError, overloadError, checksumError, rangeError, overheatingError, angleLimitError, inputVoltageError);
+        }
+    };
+
     /**
      * @brief Structure représentant l'état d'un servo moteur.
      * @param id Identifiant du servo moteur.
@@ -82,6 +121,7 @@ namespace ServoAX12
         String name = "";
         int position = 0;
         int speed = 0;
+        int load = 0;
         ServoConfig config = ServoConfig((uint8_t)Hardware_Config::ServoID::BroadCast, {0}, 1);
         int command_position = 0;
         int command_speed = 0;
@@ -96,6 +136,7 @@ namespace ServoAX12
         uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
         int failureCount = 0;           // Compteur d'erreurs consécutives
         bool torqueEnable = false;      // Torque activé ou non
+        ServoError error = ServoError();
 
         float positionSimulationIncrement = 0.0f;
 
@@ -148,7 +189,7 @@ namespace ServoAX12
                               uint8_t id,
                               int32_t &value,
                               uint32_t timeout = 10);
-                              
+
     bool HandleCommand(Command cmd);
     void PrintCommandHelp();
 
@@ -160,6 +201,11 @@ namespace ServoAX12
     void TeleplotPosition(Hardware_Config::ServoID logicalId);
     void TeleplotAllSpeed();
     void TeleplotSpeed(Hardware_Config::ServoID logicalId);
+    void TeleplotAllLoad();
+    void TeleplotLoad(Hardware_Config::ServoID logicalId);
+    void TeleplotAllMoving();
+    void TeleplotMoving(Hardware_Config::ServoID logicalId);
+
     void PrintAllPosition();
     void PrintPosition(Hardware_Config::ServoID logicalId);
     void PrintAllSpeed();
