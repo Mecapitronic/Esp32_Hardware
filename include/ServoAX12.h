@@ -195,7 +195,7 @@ namespace ServoAX12
 
     int16_t Scan();
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
-    void PrintDxlInfo(Hardware_Config::ServoID logicalId = Hardware_Config::ServoID::BroadCast);
+    void PrintDxlInfo(Hardware_Config::ServoID logicalId);
 
     void TeleplotAllPosition();
     void TeleplotPosition(Hardware_Config::ServoID logicalId);

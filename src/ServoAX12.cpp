@@ -627,7 +627,7 @@ namespace ServoAX12
 
     bool HandleCommand(Command cmd)
     {
-        // PrintTeleplot:1;AX12Torque:1:30;AX12Torque:2:30;AX12Speed:1:30;AX12Speed:2:30;AX12Pos:1:150;AX12Pos:2:160;Delay:2000;AX12Pos:1:280;AX12Pos:2:210
+        // PrintTeleplot:1;AX12Torque:1:30;AX12Torque:2:30;AX12Speed:1:30;AX12Speed:2:30;AX12Pos:1:150;AX12Pos:2:160;AX12Wait;Delay:2000;AX12Pos:1:280;AX12Pos:2:210;AX12Wait;
         // PrintTeleplot:0;AX12Torque:1:100;AX12Torque:2:100;AX12Speed:1:10;AX12Speed:2:10;AX12Pos:1:150;AX12Pos:2:160;Delay:2000;AX12Pos:1:280;AX12Pos:2:210
         if (cmd.cmdEquals("AX12Scan"))
         {
@@ -650,7 +650,12 @@ namespace ServoAX12
                 PrintDxlInfo(logicalId);
             }
             else
-                PrintDxlInfo();
+            {
+                for (const auto &[_id, servo] : Servos)
+                {
+                    PrintDxlInfo(_id);
+                }
+            }
         }
         else if (cmd.cmdEquals("AX12ConfigPrint"))
         {
@@ -747,7 +752,7 @@ namespace ServoAX12
                     vTaskDelay(1);
                 }
             }
-            if (cmd.size >= 2)
+            if (cmd.size == 2)
             {
                 for (const auto &[servoKey, servo] : Servos)
                 {
@@ -759,6 +764,21 @@ namespace ServoAX12
                                                       (uint8_t)servo.config.ax12Id,
                                                       cmd.data[1]));
                     vTaskDelay(1);
+                }
+            }
+            else if (cmd.size == 3)
+            {
+                ServoID logicalId = static_cast<ServoID>(cmd.data[2]);
+                if (ServoExists(logicalId))
+                {
+                    ServoMotion &servo = Servos.at(logicalId);
+                    println("Servo ID %d Write Data %d %d -> %d",
+                            servo.config.ax12Id,
+                            cmd.data[0],
+                            cmd.data[1],
+                            dxl.writeControlTableItem((uint8_t)cmd.data[0],
+                                                    (uint8_t)servo.config.ax12Id,
+                                                    cmd.data[1]));
                 }
             }
         }
@@ -831,8 +851,15 @@ namespace ServoAX12
         Printer::println("      Set speed of servo [id] to [speed] (in %)");
         Printer::println("      If no argument, print all current speeds");
         Printer::println(" > AX12Torque:[id]:[torque]");
-        Printer::println("      Set torque limit of servo [id] to [torque] (in %");
+        Printer::println("      Set torque limit of servo [id] to [torque] (in %)");
         Printer::println("      If no argument, print all torque limits");
+        Printer::println(" > AX12Table:[item]:[value]:[id]");
+        Printer::println("      Read/Write Dynamixel control table item for all servos");
+        Printer::println("      With 1 arg: read item from all servos");
+        Printer::println("      With 2 or 3 args (optional): write value to item for all servos or for the given id");
+        Printer::println(" > AX12Wait:[id]");
+        Printer::println("      Wait for all servos to finish moving");
+        Printer::println("      If [id] is given, wait only for that servo");
         Printer::println(" > AX12Stop");
         Printer::println("      Stop all servos (torque off)");
         Printer::println(" > AX12Start");
@@ -891,35 +918,16 @@ namespace ServoAX12
 
     void PrintDxlInfo(ServoID logicalId)
     {
-        if (logicalId != ServoID::BroadCast)
+        if (ServoExists(logicalId))
         {
-            if (ServoExists(logicalId))
-            {
-                ServoMotion &servo = Servos.at(logicalId);
-                uint8_t ax12Id = servo.config.ax12Id;
-                if (dxl.ping(ax12Id))
-                {
-                        println("ID %i, Name %s, Model Number %i, position %d, command %d, isMoving %i",
-                            ax12Id, servo.name.c_str(), dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
-                }
-                else
-                {
-                    println("Dynamixel ID %i not found", ax12Id);
-                }
-            }
-            else
-            {
-                println("Dynamixel ID %i not found", (uint8_t)logicalId);
-            }
+            ServoMotion &servo = Servos.at(logicalId);
+            uint8_t ax12Id = servo.config.ax12Id;
+                println("ID %i, Name %s, Model Number %i, position %d, command position %d, isMoving %i, shouldMove %i, speed %d, command speed %d, load %d, torque enable %d, error code 0x%02X, failure count %d", 
+                    ax12Id, servo.name.c_str(), dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving, servo.shouldMove, servo.speed, servo.command_speed, servo.load, servo.torqueEnable, servo.error.errorCode, servo.failureCount);
         }
         else
         {
-            for (const auto &[_id, servo] : Servos)
-            {
-                uint8_t ax12Id = servo.config.ax12Id;
-                println("ID %i, Name %s, Model Number %i, position %d, command %d, isMoving %i",
-                    ax12Id, servo.name.c_str(), dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving);
-            }
+            println("Dynamixel ID %i not found", (uint8_t)logicalId);
         }
     }
 
