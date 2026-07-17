@@ -45,7 +45,7 @@ namespace Hardware
         Screen::Initialisation();
         IHM::Initialisation();
         if (useToF)
-            ToF_VL53L8CX::Initialisation();
+            TaskThread(ToF_VL53L8CX::TaskInit, "ToF_VL53L8CX TaskInit", 20000, 15, 0);
 
         externalI2CUpdateTimeout.Start(kExternalI2CUpdatePeriodMs);
         powerUpdateTimeout.Start(kPowerUpdatePeriodMs);

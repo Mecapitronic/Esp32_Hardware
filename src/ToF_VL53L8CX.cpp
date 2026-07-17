@@ -19,6 +19,8 @@ namespace ToF_VL53L8CX
         int targetDistance = 300;
         int16_t firstLineDistances[8] = {0,0,0,0,0,0,0,0};
 
+        bool isInit = false;
+
         // Helper functions for sending binary arrays
         void sendInt16Array(int16_t *data, size_t len)
         {
@@ -65,13 +67,19 @@ namespace ToF_VL53L8CX
         }
     } // namespace
 
+    void TaskInit(void *pvParameters)
+    {
+        Initialisation();
+        vTaskDelete(NULL);
+    }
+
     void Initialisation()
     {
         println("Init VL53L8CX");
 
         if (!simulation)
         {
-            println("Initializing sensor board. This can take up to 10s. Please wait.");
+            println("VL53L8CX : Initializing sensor board. This can take up to 10s. Please wait.");
 
             // Time how long it takes to transfer firmware to sensor
             long startTime = millis();
@@ -81,15 +89,15 @@ namespace ToF_VL53L8CX
 
             if (errorStatus)
             {
-                printError("Sensor initialization failed !");
+                printError("VL53L8CX : Sensor initialization failed !");
             }
             else
             {
-                println("Sensor initialization successful !");
+                println("VL53L8CX : Sensor initialization successful !");
             }
 
             float timeTaken = (stopTime - startTime) / 1000.0;
-            println("Firmware transfer time %0.3f s", timeTaken);
+            println("VL53L8CX : Firmware transfer time %0.3f s", timeTaken);
 
             sensor.set_resolution(DEFAULT_RESOLUTION); // Enable all 64 pads (8x8)
 
@@ -138,6 +146,7 @@ namespace ToF_VL53L8CX
             errorStatus = 0;
         }
         measurementStartTime = millis();
+        isInit = true;
     }
 
     uint8_t newDataReady = 0;
@@ -145,53 +154,56 @@ namespace ToF_VL53L8CX
     {
         try
         {
-            if (!simulation)
+            if(isInit)
             {
-                if (!newDataReady)
+                if (!simulation)
                 {
-                    errorStatus = sensor.check_data_ready(&newDataReady);
-                }
-                if ((!errorStatus) && (newDataReady != 0))
-                {
-                    errorStatus = sensor.get_ranging_data(&sensorData); // Read distance data
-                    newDataReady = 0;
-
-                    int found = 0;
-                    for (size_t i = 0; i < 8; i++)
+                    if (!newDataReady)
                     {
-#if !defined(VL53L8CX_DISABLE_DISTANCE_MM) && !defined(VL53L8CX_DISABLE_TARGET_STATUS)
-                         // Check if distance is below threshold and status is valid
-                        if (sensorData.distance_mm[i] < targetDistance && sensorData.target_status[i] == 5)
+                        errorStatus = sensor.check_data_ready(&newDataReady);
+                    }
+                    if ((!errorStatus) && (newDataReady != 0))
+                    {
+                        errorStatus = sensor.get_ranging_data(&sensorData); // Read distance data
+                        newDataReady = 0;
+
+                        int found = 0;
+                        for (size_t i = 0; i < 8; i++)
                         {
-                            found++;
+    #if !defined(VL53L8CX_DISABLE_DISTANCE_MM) && !defined(VL53L8CX_DISABLE_TARGET_STATUS)
+                            // Check if distance is below threshold and status is valid
+                            if (sensorData.distance_mm[i] < targetDistance && sensorData.target_status[i] == 5)
+                            {
+                                found++;
+                            }
+                            if(sensorData.target_status[i] == 5)
+                            {
+                                firstLineDistances[i] = sensorData.distance_mm[i];
+                            }
+                            else
+                            {
+                                firstLineDistances[i] = 0;
+                            }
+    #endif
                         }
-                        if(sensorData.target_status[i] == 5)
+                        if(found > 5)
                         {
-                            firstLineDistances[i] = sensorData.distance_mm[i];
+                            target_present = true;
                         }
                         else
                         {
-                            firstLineDistances[i] = 0;
+                            target_present = false;
                         }
-#endif
-                    }
-                    if(found > 5)
-                    {
-                        target_present = true;
-                    }
-                    else
-                    {
-                        target_present = false;
                     }
                 }
-            }
-            else
-            {
-                // Simulate data by slightly varying distance values
-                for (int i = 0; i < 64; i++)
+                else
                 {
-                    sensorData.distance_mm[i] += random(-10, 10);                }
-                        
+                    // Simulate data by slightly varying distance values
+                    for (int i = 0; i < 64; i++)
+                    {
+                        sensorData.distance_mm[i] += random(-10, 10);                }
+                            
+                }
             }
         }
         catch (const std::exception &e)
