@@ -154,7 +154,7 @@ namespace IHM
     {
         const CRGB teamColor = (IHM::team == IHM::Team::Jaune) ? CRGB::Gold : ((IHM::team == IHM::Team::Bleu) ? CRGB::DodgerBlue : CRGB::White);
         const CRGB teamInverseColor = (IHM::team == IHM::Team::Jaune) ? CRGB::DodgerBlue : ((IHM::team == IHM::Team::Bleu) ? CRGB::Gold : CRGB::White);
-        const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::Green : ((IHM::switchMode == 0) ? CRGB::Violet: CRGB::White);
+        const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::Green : ((IHM::switchMode == 0) ? CRGB::Red: CRGB::White);
 
         if (Match::matchState == Match::State::MATCH_BOOT || Match::matchState == Match::State::MATCH_WAIT)
         {
