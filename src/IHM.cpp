@@ -45,12 +45,12 @@ namespace IHM
         if (tirettePresent == 1)
         {
             println("Tirette : Présente au démarrage");
-            ledTimeOut.timeOut = 500;
+            ledTimeOut.Start(500);
         }
         else if (tirettePresent == 0)
         {
             println("Tirette : Absente au démarrage");
-            ledTimeOut.timeOut = 500;
+            ledTimeOut.Start(500);
         }
 
         builtInLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
