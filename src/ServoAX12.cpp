@@ -673,7 +673,7 @@ namespace ServoAX12
 
     void PrintCommandHelp()
     {
-        Printer::println("AX12 Command Help :");
+        Printer::println("AX12 Command Help");
         Printer::println(" > AX12Scan");
         Printer::println("      Scan all Dynamixel on all protocols and baudrates");
         Printer::println(" > AX12PrintInfo:[id]");

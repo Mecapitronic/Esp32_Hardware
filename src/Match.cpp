@@ -188,7 +188,7 @@ namespace Match
 
     void PrintCommandHelp()
     {
-        println("Available Commands:");
+        println("Match Command Help");
         println("NumPami:<value> - Set the PAMI number (1-99)");
     }
 } // namespace Match
