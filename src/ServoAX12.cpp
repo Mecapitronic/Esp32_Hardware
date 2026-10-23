@@ -66,6 +66,18 @@ namespace ServoAX12
             }
             return true;
         }
+
+        void IncrementFailureCount(ServoMotion &servo)
+        {
+            DXLLibErrorCode_t code = dxl.getLastLibErrCode();
+            //if (code == DXLLibErrorCode::DXL_LIB_OK)
+            //    return;
+            uint8_t index = (uint8_t)code;
+            if (index < servo.DXLLibErrorCodeMax)
+            {
+                servo.failureCount[index]++;
+            }
+        }
     } // namespace
 
     void Initialisation(HardwareSerial &serial, int8_t rxPin, int8_t txPin, int8_t dirPin, BaudRate baudRate, DxlProtocolVersion dxlProtocolVersion)
@@ -143,7 +155,6 @@ namespace ServoAX12
             servo.speed = 0;
             servo.command_speed = 50;
             servo.initialized = true;
-            servo.failureCount = 0;
             servo.torqueEnable = true;
             println("Servo %s %d position %d [SIM]",
                     servo.name.c_str(),
@@ -151,92 +162,81 @@ namespace ServoAX12
                     servo.position);
             return;
         }
-
-        // sometimes does not work ... disable it for now
-        //if (dxl.ping(servo.config.ax12Id))
+        for (size_t i = 0; i < servo.DXLLibErrorCodeMax; i++)
         {
-            int id = servo.config.ax12Id;
-            while (servo.initState < kServoInitStepCount)
+            servo.failureCount[i]=0;
+        }
+    
+        while (servo.initState < kServoInitStepCount)
+        {
+            const ServoInitStep &step = kServoInitSteps[servo.initState];
+            int value = 0;
+            if(!ReadControlTableItem(step.item, value, &servo))
+                break;
+            println("Servo %s ID %d init step %d: item %d read value %d, set value %d",
+                servo.name.c_str(),
+                servo.config.ax12Id,
+                servo.initState,
+                step.item,
+                value,
+                step.value);
+            if(value == step.value)
             {
-                const ServoInitStep &step = kServoInitSteps[servo.initState];
-                int value = 0;
-                if(!ReadControlTableItem(step.item, id, value))
-                    break;
-                println("Servo %s ID %d init step %d: item %d read value %d, set value %d",
-                    servo.name.c_str(),
-                    id,
-                    servo.initState,
-                    step.item,
-                    value,
-                    step.value);
-                if(value == step.value)
-                {
-                    servo.initState++;
-                    continue;
-                }
-                if (!WriteControlTableItem(step.item, id, step.value))
-                {
-                    break;
-                }
                 servo.initState++;
-                vTaskDelay(1);
+                continue;
             }
-
-            if (servo.initState == kServoInitStepCount)
+            if (!WriteControlTableItem(step.item, step.value, &servo))
             {
-                float presentPosition =
-                    dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
-                println("Servo %s %d at position %0.2f",
-                    servo.name.c_str(),
-                    servo.config.ax12Id,
-                    presentPosition);
-                    
-                int minPos = 0;
-                int maxPos = 0;
-                GetPositionBounds(servo, minPos, maxPos);
-                if (presentPosition <= minPos || presentPosition >= maxPos)
-                {
-                    servo.failureCount++;
-                    println("Unexpected position for Servo %s %d: %0.2f (expected between %d and %d)",
-                            servo.name.c_str(),
-                            servo.config.ax12Id,
-                            presentPosition,
-                            minPos,
-                            maxPos);
-                }
-                else
-                {
-                    // on le met à la position courante pour éviter de donner un ordre non voulu
-                    servo.position = servo.command_position = (int)presentPosition;
-                    servo.speed = 0;
-                    servo.command_speed = 0;
-                    servo.initialized = true;
-                    servo.failureCount = 0;
-                    servo.torqueEnable = true;
-                    servo.initState++;
-
-                    println("Servo %s %d at position %d - Init Done !",
-                            servo.name.c_str(),
-                            servo.config.ax12Id,
-                            servo.position);
-                }
+                break;
+            }
+            servo.initState++;
+            vTaskDelay(1);
+        }
+        if (servo.initState == kServoInitStepCount)
+        {
+            float presentPosition =
+                dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
+            IncrementFailureCount(servo);
+            println("Servo %s %d at position %0.2f",
+                servo.name.c_str(),
+                servo.config.ax12Id,
+                presentPosition);
+            
+            int minPos = 0;
+            int maxPos = 0;
+            GetPositionBounds(servo, minPos, maxPos);
+            if (presentPosition <= minPos - 1 || presentPosition >= maxPos + 1)
+            {
+                println("Unexpected position for Servo %s %d: %0.2f (expected between %d and %d)",
+                        servo.name.c_str(),
+                        servo.config.ax12Id,
+                        presentPosition,
+                        minPos,
+                        maxPos);
             }
             else
             {
-                servo.failureCount++;
-                DXLLibErrorCode dxlLibOk = DXLLibErrorCode::DXL_LIB_OK;
-                println("Failed to init Servo %s %d at step %d, error code %d",
-                    servo.name.c_str(),
+                // on le met à la position courante pour éviter de donner un ordre non voulu
+                servo.position = servo.command_position = (int)presentPosition;
+                servo.speed = 0;
+                servo.command_speed = 0;
+                servo.initialized = true;
+                servo.torqueEnable = true;
+                servo.initState++;
+                println("Servo %s %d at position %d - Init Done !",
+                        servo.name.c_str(),
                         servo.config.ax12Id,
-                        servo.initState,
-                        dxl.getLastLibErrCode());
+                        servo.position);
             }
         }
-        // else
-        // {
-        //     servo.failureCount++;
-        //     println(" NOT connected! (attempt %d)", servo.failureCount);
-        // }
+        else
+        {
+            println("Failed to init Servo %s %d at step %d, error code %d",
+                servo.name.c_str(),
+                    servo.config.ax12Id,
+                    servo.initState,
+                    dxl.getLastLibErrCode());
+        }
     }
 
     void AddServo(ServoID logicalId, String name, const ServoConfig &defaults)
@@ -271,7 +271,6 @@ namespace ServoAX12
         // Vérifier la tension avant de faire une opération I2C
         if (Power::isLowVoltage())
         {
-            // servo.IsMoving = false;
             return;
         }
 
@@ -308,37 +307,37 @@ namespace ServoAX12
             // POSITION
             // sometimes timeout at 100ms
             float position = dxl.getPresentPosition(servo.config.ax12Id, UNIT_DEGREE);
-            if (position == 0.0f || dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
-                servo.failureCount++;
-            else
+            IncrementFailureCount(servo);
+            if (position != 0.0f && dxl.getLastLibErrCode() == DXLLibErrorCode::DXL_LIB_OK)
                 servo.position = (int)position;
             
             // SPEED
             int speed = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::PRESENT_SPEED, servo.config.ax12Id);
-            if (dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
-                servo.failureCount++;
-            else if (speed >= 0 && speed <= 1023)
-                servo.speed = map(speed, 0, 1023, 0, -100);
-            else if (speed >= 1024 && speed <= 2047)
-                servo.speed = map(speed, 1024, 2047, 0, 100);
+            IncrementFailureCount(servo);
+            if (dxl.getLastLibErrCode() == DXLLibErrorCode::DXL_LIB_OK)
+            {
+                if (speed >= 0 && speed <= 1023)
+                    servo.speed = map(speed, 0, 1023, 0, -100);
+                else if (speed >= 1024 && speed <= 2047)
+                    servo.speed = map(speed, 1024, 2047, 0, 100);
+            }
 
             // LOAD
             int32_t load = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::PRESENT_LOAD, servo.config.ax12Id);
-            if (dxl.getLastLibErrCode() != DXLLibErrorCode::DXL_LIB_OK)
-                servo.failureCount++;
-            else if (load >= 0 && load <= 1023)
-                servo.load = map(load, 0, 1023, 0, -100);
-            else if (load >= 1024 && load <= 2047)
-                servo.load = map(load, 1024, 2047, 0, 100);
+            IncrementFailureCount(servo);
+            if (dxl.getLastLibErrCode() == DXLLibErrorCode::DXL_LIB_OK)
+            {
+                if (load >= 0 && load <= 1023)
+                    servo.load = map(load, 0, 1023, 0, -100);
+                else if (load >= 1024 && load <= 2047)
+                    servo.load = map(load, 1024, 2047, 0, 100);
+            }
 
             // ERROR
             int32_t error = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::SHUTDOWN, servo.config.ax12Id);
-            servo.error = ServoError(error);
-            // if(error != 0)
-            // {
-            //     println("Servo %s ID %d error code: 0x%02X", servo.name.c_str(), servo.config.ax12Id, error);
-            //     servo.error.PrintError();
-            // }
+            IncrementFailureCount(servo);                
+            if (dxl.getLastLibErrCode() == DXLLibErrorCode::DXL_LIB_OK)
+                servo.error = ServoError(error);
         }
 
         // Stop the torque if the BAU is engaged
@@ -351,7 +350,9 @@ namespace ServoAX12
                 if (!simulation)
                 {
                     dxl.torqueOff(servo.config.ax12Id);
+                    IncrementFailureCount(servo); 
                     servo.torqueEnable = (bool)dxl.getTorqueEnableStat(servo.config.ax12Id);
+                    IncrementFailureCount(servo); 
                 }
                 else
                 {
@@ -371,7 +372,9 @@ namespace ServoAX12
                 if (!simulation)
                 {
                     dxl.torqueOn(servo.config.ax12Id);
+                    IncrementFailureCount(servo); 
                     servo.torqueEnable = (bool)dxl.getTorqueEnableStat(servo.config.ax12Id);
+                    IncrementFailureCount(servo);
                 }
                 else
                 {
@@ -388,6 +391,7 @@ namespace ServoAX12
                 servo.goalSpeedAcked = dxl.writeControlTableItem(ControlTableItem::ControlTableItemIndex::MOVING_SPEED,
                     servo.config.ax12Id,
                     servo.command_speed * 1023 / 100);
+                IncrementFailureCount(servo); 
                 println("Set Speed for Servo ID %i to %d %% %s",
                         servo.config.ax12Id,
                         servo.command_speed,
@@ -395,10 +399,6 @@ namespace ServoAX12
             }
             else
                 servo.goalSpeedAcked = true;
-            if (!servo.goalSpeedAcked)
-            {
-                servo.failureCount++;
-            }
         }
         
         // Send Set servo position if not already send
@@ -408,6 +408,7 @@ namespace ServoAX12
             {
                 servo.goalPositionAcked = dxl.setGoalPosition(
                     servo.config.ax12Id, (float)servo.command_position, UNIT_DEGREE);
+                IncrementFailureCount(servo); 
                 println("Set Position for Servo ID %i from %d to %d %s",
                         servo.config.ax12Id,
                         servo.position,
@@ -416,12 +417,8 @@ namespace ServoAX12
             }
             else
                 servo.goalPositionAcked = true;
-            if (!servo.goalPositionAcked)
-            {
-                servo.failureCount++;
-            }
         }
-
+        
         // On considère que le servo est en mouvement s'il est à plus ou moins de 5 degrés de la position commandée
         // on allume la LED pour indiquer qu'une commande de position est en cours
         // Si on a indiqué un timeOut à la commande, on considère que le servo est en mouvement tant que le timeOut n'est pas expiré
@@ -432,9 +429,11 @@ namespace ServoAX12
             {
                 servo.ledState = true;
                 if (!simulation)
+                {
                     dxl.ledOn(servo.config.ax12Id);
+                    IncrementFailureCount(servo);
+                }
             }
-            servo.IsMoving = true;
         }
         else
         {
@@ -442,9 +441,11 @@ namespace ServoAX12
             {
                 servo.ledState = false;
                 if (!simulation)
+                {
                     dxl.ledOff(servo.config.ax12Id);
+                    IncrementFailureCount(servo);
+                }
             }
-            servo.IsMoving = false;
         }
     }
 
@@ -583,10 +584,12 @@ namespace ServoAX12
     }
 
     bool WriteControlTableItem(ControlTableItem::ControlTableItemIndex item,
-                               uint8_t id,
                                int32_t value,
+                               ServoMotion *servo,
                                uint32_t timeout)
     {
+        if (servo == nullptr)
+            return false;
         int retry = 0;
         while (retry < 3)
         {
@@ -595,7 +598,8 @@ namespace ServoAX12
             //         value,
             //         id,
             //         retry);
-            bool ret = dxl.writeControlTableItem(item, id, value, timeout);
+            bool ret = dxl.writeControlTableItem(item, servo->config.ax12Id, value, timeout);
+            IncrementFailureCount(*servo);
             if (ret)
                 return true;
             retry++;
@@ -605,10 +609,12 @@ namespace ServoAX12
     }
 
     bool ReadControlTableItem(ControlTableItem::ControlTableItemIndex item,
-                              uint8_t id,
                               int32_t &value,
+                              ServoMotion *servo,
                               uint32_t timeout)
     {
+        if (servo == nullptr)
+            return false;
         int retry = 0;
         while (retry < 3)
         {
@@ -616,7 +622,8 @@ namespace ServoAX12
             //         item,
             //         id,
             //         retry);
-            value = dxl.readControlTableItem(item, id, timeout);
+            value = dxl.readControlTableItem(item, servo->config.ax12Id, timeout);
+            IncrementFailureCount(*servo);
             if (dxl.getLastLibErrCode() == DXLLibErrorCode::DXL_LIB_OK)
                 return true;
             retry++;
@@ -742,19 +749,20 @@ namespace ServoAX12
             // PRESENT_POSITION AX12Table:66
             if (cmd.size >= 1)
             {
-                for (const auto &[servoKey, servo] : Servos)
+                for (auto &[servoKey, servo] : Servos)
                 {
                     println("Servo ID %d Read Data %d %d",
                             servo.config.ax12Id,
                             cmd.data[0],
                             dxl.readControlTableItem((uint8_t)cmd.data[0],
                                                      (uint8_t)servo.config.ax12Id));
+                    IncrementFailureCount(servo);
                     vTaskDelay(1);
                 }
             }
             if (cmd.size == 2)
             {
-                for (const auto &[servoKey, servo] : Servos)
+                for (auto &[servoKey, servo] : Servos)
                 {
                     println("Servo ID %d Write Data %d %d -> %d",
                             servo.config.ax12Id,
@@ -763,6 +771,7 @@ namespace ServoAX12
                             dxl.writeControlTableItem((uint8_t)cmd.data[0],
                                                       (uint8_t)servo.config.ax12Id,
                                                       cmd.data[1]));
+                    IncrementFailureCount(servo);
                     vTaskDelay(1);
                 }
             }
@@ -779,23 +788,26 @@ namespace ServoAX12
                             dxl.writeControlTableItem((uint8_t)cmd.data[0],
                                                     (uint8_t)servo.config.ax12Id,
                                                     cmd.data[1]));
+                    IncrementFailureCount(servo);
                 }
             }
         }
         else if (cmd.cmdEquals("AX12Stop"))
         {
             println("Stopping all servos...");
-            for (const auto &[servoKey, servo] : Servos)
+            for (auto &[servoKey, servo] : Servos)
             {
                 dxl.torqueOff(servo.config.ax12Id);
+                IncrementFailureCount(servo);
             }
         }
         else if (cmd.cmdEquals("AX12Start"))
         {
             println("Starting all servos...");
-            for (const auto &[servoKey, servo] : Servos)
+            for (auto &[servoKey, servo] : Servos)
             {
                 dxl.torqueOn(servo.config.ax12Id);
+                IncrementFailureCount(servo);
             }
         }
         else if (cmd.cmdEquals("AX12Wait"))
@@ -1000,6 +1012,29 @@ namespace ServoAX12
         }
     }
 
+    void TeleplotAllFailureCount()
+    {
+        for (auto &[servoKey, servo] : Servos)
+        {
+            for (int16_t i = 0; i < servo.DXLLibErrorCodeMax; i++)
+            {
+                teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_failureCount", Point(i, servo.failureCount[i]));
+            }
+        }
+    }
+
+    void TeleplotFailureCount(ServoID logicalId)
+    {
+        if (ServoExists(logicalId))
+        {
+            auto &servo = Servos.at(logicalId);
+            for (int16_t i = 0; i < servo.DXLLibErrorCodeMax; i++)
+            {
+                teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_failureCount", Point(i, servo.failureCount[i]));
+            }
+        }
+    }
+
     void PrintAllPosition()
     {
         for (auto &[servoKey, servo] : Servos)
@@ -1043,6 +1078,7 @@ namespace ServoAX12
         for (auto &[servoKey, servo] : Servos)
         {
             int torqueLimit = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, servo.config.ax12Id);
+            IncrementFailureCount(servo);
             println("Servo_%s_%d Torque Limit %d", servo.name.c_str(), servo.config.ax12Id, torqueLimit);
         }
     }

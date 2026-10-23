@@ -134,7 +134,8 @@ namespace ServoAX12
         bool initialized = false;       // Servo connecté et prêt
         int initState = 0;
         uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
-        int failureCount = 0;           // Compteur d'erreurs consécutives
+        static constexpr uint8_t DXLLibErrorCodeMax = 21;
+        int failureCount[DXLLibErrorCodeMax];           // Compteur d'erreurs consécutives DXLLibErrorCode
         bool torqueEnable = false;      // Torque activé ou non
         ServoError error = ServoError();
 
@@ -182,12 +183,12 @@ namespace ServoAX12
     int GetServoPosition(Hardware_Config::ServoID logicalId);
 
     bool WriteControlTableItem(ControlTableItem::ControlTableItemIndex item,
-                               uint8_t id,
                                int32_t value,
+                               ServoMotion *servo,
                                uint32_t timeout = 10);
     bool ReadControlTableItem(ControlTableItem::ControlTableItemIndex item,
-                              uint8_t id,
                               int32_t &value,
+                              ServoMotion *servo,
                               uint32_t timeout = 10);
 
     bool HandleCommand(Command cmd);
@@ -205,6 +206,8 @@ namespace ServoAX12
     void TeleplotLoad(Hardware_Config::ServoID logicalId);
     void TeleplotAllMoving();
     void TeleplotMoving(Hardware_Config::ServoID logicalId);
+    void TeleplotAllFailureCount();
+    void TeleplotFailureCount(Hardware_Config::ServoID logicalId);
 
     void PrintAllPosition();
     void PrintPosition(Hardware_Config::ServoID logicalId);
