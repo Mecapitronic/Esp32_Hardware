@@ -238,11 +238,6 @@ namespace ServoAX12
     void AddServo(ServoID logicalId, String name, const ServoConfig &defaults)
     {
         Servos[logicalId] = ServoMotion(name, defaults);
-        for (size_t i = 0; i < Servos[logicalId].DXLLibErrorCodeMax; i++)
-        {
-            Servos[logicalId].failureCount[i]=0;
-            Servos[logicalId].failureCountPrev[i] = 0;
-        }
         // Will be initialised in the Update Task
     }
 
@@ -950,8 +945,13 @@ namespace ServoAX12
             uint8_t ax12Id = servo.config.ax12Id;
             int modelNumber = dxl.getModelNumber(ax12Id);
             IncrementFailureCount(servo);
-            println("ID %i, Name %s, Model Number %i, position %d, command position %d, speed %d, command speed %d, load %d, torque enable %d, error code 0x%02X, failure count %d, IsMoving %d, shouldMove %d", 
-                ax12Id, servo.name.c_str(), modelNumber, servo.position, servo.command_position, servo.speed, servo.command_speed, servo.load, servo.torqueEnable, servo.error.errorCode, servo.failureCount, servo.IsMoving, servo.shouldMove);
+            int failureCountSum = 0;
+            for (size_t i = 0; i < servo.DXLLibErrorCodeMax; i++)
+            {
+                failureCountSum += servo.failureCount[i];
+            }
+            println("ID %i, Name %s, Model Number %i, position %d, command position %d, speed %d, command speed %d, load %d, torque enable %d, error code 0x%02X, failure count sum %d, IsMoving %d, shouldMove %d", 
+                ax12Id, servo.name.c_str(), modelNumber, servo.position, servo.command_position, servo.speed, servo.command_speed, servo.load, servo.torqueEnable, servo.error.errorCode, failureCountSum, servo.IsMoving, servo.shouldMove);
         }
         else
         {

@@ -157,6 +157,11 @@ namespace ServoAX12
             // Initialisation des valeurs
             name = _name;
             config = _config;
+            for (size_t i = 0; i < DXLLibErrorCodeMax; i++)
+            {
+                failureCount[i]=0;
+                failureCountPrev[i] = 0;
+            }
         }
 
         bool operator==(const ServoMotion &other) const
