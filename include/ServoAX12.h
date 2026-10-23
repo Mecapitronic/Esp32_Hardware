@@ -125,17 +125,19 @@ namespace ServoAX12
         ServoConfig config = ServoConfig((uint8_t)Hardware_Config::ServoID::BroadCast, {0}, 1);
         int command_position = 0;
         int command_speed = 0;
+        bool shouldMove = false;
         bool IsMoving = false;
         bool ledState = false;
         Timeout timeOut;
-        bool goalPositionAcked = false;
-        bool goalSpeedAcked = false;
+        bool goalPositionAcked = true;
+        bool goalSpeedAcked = true;
         // Tracking d'état d'initialisation
         bool initialized = false;       // Servo connecté et prêt
         int initState = 0;
         uint32_t lastInitAttempt = 0;   // Timestamp du dernier tentative d'init (ms)
-        static constexpr uint8_t DXLLibErrorCodeMax = 21;
+        static constexpr uint8_t DXLLibErrorCodeMax = DXLLibErrorCode::DXL_LIB_ERROR_PORT_WRITE + 1; // Max error code + 1
         int failureCount[DXLLibErrorCodeMax];           // Compteur d'erreurs consécutives DXLLibErrorCode
+        int failureCountPrev[DXLLibErrorCodeMax];       // Compteur d'erreurs consécutives DXLLibErrorCode précédent
         bool torqueEnable = false;      // Torque activé ou non
         ServoError error = ServoError();
 
@@ -204,10 +206,10 @@ namespace ServoAX12
     void TeleplotSpeed(Hardware_Config::ServoID logicalId);
     void TeleplotAllLoad();
     void TeleplotLoad(Hardware_Config::ServoID logicalId);
-    void TeleplotAllMoving();
-    void TeleplotMoving(Hardware_Config::ServoID logicalId);
     void TeleplotAllFailureCount();
     void TeleplotFailureCount(Hardware_Config::ServoID logicalId);
+    void TeleplotAllTorqueEnable();
+    void TeleplotTorqueEnable(Hardware_Config::ServoID logicalId);
 
     void PrintAllPosition();
     void PrintPosition(Hardware_Config::ServoID logicalId);

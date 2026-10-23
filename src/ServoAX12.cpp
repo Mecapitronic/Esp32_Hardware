@@ -28,14 +28,14 @@ namespace ServoAX12
         constexpr ServoInitStep kServoInitSteps[] = {
             {ControlTableItem::ControlTableItemIndex::DXL_LED, 1},
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 0},
-            {ControlTableItem::ControlTableItemIndex::TEMPERATURE_LIMIT, 70}, //EEPROM, 70 by default
-            {ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0}, //EEPROM, 0 by default
-            {ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023}, //EEPROM, 1023 by default
-            {ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200}, //EEPROM, 1023 by default
-            {ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 200}, // Max Torque at power up
-            {ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 8},
-            {ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 8},
-            {ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 200},
+            //{ControlTableItem::ControlTableItemIndex::TEMPERATURE_LIMIT, 70}, //EEPROM, 70 by default
+            //{ControlTableItem::ControlTableItemIndex::CW_ANGLE_LIMIT, 0}, //EEPROM, 0 by default
+            //{ControlTableItem::ControlTableItemIndex::CCW_ANGLE_LIMIT, 1023}, //EEPROM, 1023 by default
+            //{ControlTableItem::ControlTableItemIndex::MAX_TORQUE, 200}, //EEPROM, 1023 by default
+            //{ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT, 200}, // Max Torque at power up
+            //{ControlTableItem::ControlTableItemIndex::CW_COMPLIANCE_SLOPE, 8}, // 32 by default
+            //{ControlTableItem::ControlTableItemIndex::CCW_COMPLIANCE_SLOPE, 8}, // 32 by default
+            //{ControlTableItem::ControlTableItemIndex::MOVING_SPEED, 200}, // 0 by default (max)
             {ControlTableItem::ControlTableItemIndex::TORQUE_ENABLE, 1},
             {ControlTableItem::ControlTableItemIndex::DXL_LED, 0},
         };
@@ -70,8 +70,8 @@ namespace ServoAX12
         void IncrementFailureCount(ServoMotion &servo)
         {
             DXLLibErrorCode_t code = dxl.getLastLibErrCode();
-            //if (code == DXLLibErrorCode::DXL_LIB_OK)
-            //    return;
+            if (code == DXLLibErrorCode::DXL_LIB_OK)
+                return;
             uint8_t index = (uint8_t)code;
             if (index < servo.DXLLibErrorCodeMax)
             {
@@ -162,10 +162,6 @@ namespace ServoAX12
                     servo.position);
             return;
         }
-        for (size_t i = 0; i < servo.DXLLibErrorCodeMax; i++)
-        {
-            servo.failureCount[i]=0;
-        }
     
         while (servo.initState < kServoInitStepCount)
         {
@@ -242,6 +238,11 @@ namespace ServoAX12
     void AddServo(ServoID logicalId, String name, const ServoConfig &defaults)
     {
         Servos[logicalId] = ServoMotion(name, defaults);
+        for (size_t i = 0; i < Servos[logicalId].DXLLibErrorCodeMax; i++)
+        {
+            Servos[logicalId].failureCount[i]=0;
+            Servos[logicalId].failureCountPrev[i] = 0;
+        }
         // Will be initialised in the Update Task
     }
 
@@ -419,11 +420,29 @@ namespace ServoAX12
                 servo.goalPositionAcked = true;
         }
         
-        // On considère que le servo est en mouvement s'il est à plus ou moins de 5 degrés de la position commandée
-        // on allume la LED pour indiquer qu'une commande de position est en cours
-        // Si on a indiqué un timeOut à la commande, on considère que le servo est en mouvement tant que le timeOut n'est pas expiré
-        // à la fin du timeOut (si != 0), le servo sera considéré arrivé (pour éviter de bloquer le code)
-        if ((servo.position >= servo.command_position + 5 || servo.position <= servo.command_position - 5) && !servo.timeOut.IsTimeOut())
+        // Gestion du timeout : log si timeout expiré pendant le mouvement
+        if(servo.IsMoving || servo.shouldMove)
+        {
+            if(servo.timeOut.IsTimeOut())
+            {
+                println("Servo %s ID %d timeout reached for position command %d (current %d)",
+                        servo.name.c_str(),
+                        servo.config.ax12Id,
+                        servo.command_position,
+                        servo.position);
+                servo.timeOut.Stop();
+            }
+        }
+        else
+        {
+            if(servo.timeOut.IsTimeOut())
+                servo.timeOut.Stop();
+        }
+
+        // On considère que le servo est en mouvement si la position n'est pas atteinte ±5° ET timeout actif
+        servo.shouldMove = (servo.position >= servo.command_position + 5 || servo.position <= servo.command_position - 5) && !servo.timeOut.IsTimeOut();
+
+        if (servo.shouldMove)
         {
             if (!servo.ledState)
             {
@@ -451,12 +470,10 @@ namespace ServoAX12
 
     bool AreAllServoMoving()
     {
-        for (const auto &[servoKey, servo] : Servos)
+        for (auto &[servoKey, servo] : Servos)
         {
-            if (servo.IsMoving)
-            {
+            if (IsServoMoving(servoKey))
                 return true;
-            }
         }
         return false;
     }
@@ -465,7 +482,12 @@ namespace ServoAX12
     {
         if (!ServoExists(logicalId))
             return false;
-        return Servos.at(logicalId).IsMoving;
+        auto &servo = Servos.at(logicalId);
+        if ((servo.IsMoving || servo.shouldMove) && !servo.timeOut.IsTimeOut())
+        {
+            return true;
+        }
+        return false;
     }
 
     void SetServoPosition(ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs)
@@ -512,16 +534,8 @@ namespace ServoAX12
         println("Servo ID %i, Set position from %d to %d", logicalId, servo.command_position, position);
         
         servo.command_position = position;
-        servo.IsMoving = true;
         servo.goalPositionAcked = false;
-        if (timeOutMs > 0)
-        {
-            servo.timeOut.Start(timeOutMs);
-        }
-        else
-        {
-            servo.timeOut.Stop();
-        }
+        servo.timeOut.Start(timeOutMs);
         // We set the command into the task, if power is not too low
     }
 
@@ -561,8 +575,8 @@ namespace ServoAX12
         if (!simulation)
         {
             if (!WriteControlTableItem(ControlTableItem::ControlTableItemIndex::TORQUE_LIMIT,
-                                       servo.config.ax12Id,
-                                       torqueLimit * 1023 / 100)) // Convert percentage to value (0-1023)
+                                       torqueLimit * 1023 / 100,
+                                       &servo)) // Convert percentage to value (0-1023)
             {
                 println("Failed to set torque limit for Servo ID %i", logicalId);
             }
@@ -934,8 +948,10 @@ namespace ServoAX12
         {
             ServoMotion &servo = Servos.at(logicalId);
             uint8_t ax12Id = servo.config.ax12Id;
-                println("ID %i, Name %s, Model Number %i, position %d, command position %d, isMoving %i, shouldMove %i, speed %d, command speed %d, load %d, torque enable %d, error code 0x%02X, failure count %d", 
-                    ax12Id, servo.name.c_str(), dxl.getModelNumber(ax12Id), servo.position, servo.command_position, servo.IsMoving, servo.shouldMove, servo.speed, servo.command_speed, servo.load, servo.torqueEnable, servo.error.errorCode, servo.failureCount);
+            int modelNumber = dxl.getModelNumber(ax12Id);
+            IncrementFailureCount(servo);
+            println("ID %i, Name %s, Model Number %i, position %d, command position %d, speed %d, command speed %d, load %d, torque enable %d, error code 0x%02X, failure count %d, IsMoving %d, shouldMove %d", 
+                ax12Id, servo.name.c_str(), modelNumber, servo.position, servo.command_position, servo.speed, servo.command_speed, servo.load, servo.torqueEnable, servo.error.errorCode, servo.failureCount, servo.IsMoving, servo.shouldMove);
         }
         else
         {
@@ -995,30 +1011,17 @@ namespace ServoAX12
         }
     }
 
-    void TeleplotAllMoving()
-    {
-        for (auto &[servoKey, servo] : Servos)
-        {
-            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Moving", servo.IsMoving ? 1 : 0);
-        }        
-    }
-
-    void TeleplotMoving(ServoID logicalId)
-    {
-        if (ServoExists(logicalId))
-        {
-            auto &servo = Servos.at(logicalId);
-            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_Moving", servo.IsMoving ? 1 : 0);
-        }
-    }
-
     void TeleplotAllFailureCount()
     {
         for (auto &[servoKey, servo] : Servos)
         {
             for (int16_t i = 0; i < servo.DXLLibErrorCodeMax; i++)
             {
-                teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_failureCount", Point(i, servo.failureCount[i]));
+                if(servo.failureCount[i] != servo.failureCountPrev[i])
+                {
+                    teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_failureCount", Point(i, servo.failureCount[i]));
+                    servo.failureCountPrev[i] = servo.failureCount[i];
+                }
             }
         }
     }
@@ -1029,9 +1032,30 @@ namespace ServoAX12
         {
             auto &servo = Servos.at(logicalId);
             for (int16_t i = 0; i < servo.DXLLibErrorCodeMax; i++)
-            {
-                teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_failureCount", Point(i, servo.failureCount[i]));
+            {                
+                if(servo.failureCount[i] != servo.failureCountPrev[i])
+                {
+                    teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_failureCount", Point(i, servo.failureCount[i]));
+                    servo.failureCountPrev[i] = servo.failureCount[i];
+                }
             }
+        }
+    }
+
+    void TeleplotAllTorqueEnable()
+    {
+        for (auto &[servoKey, servo] : Servos)
+        {
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_TorqueEnable", servo.torqueEnable ? 1 : 0);
+        }
+    }
+
+    void TeleplotTorqueEnable(ServoID logicalId)
+    {
+        if (ServoExists(logicalId))
+        {
+            auto &servo = Servos.at(logicalId);
+            teleplot("Servo_" + servo.name + "_" + String(servo.config.ax12Id) + "_TorqueEnable", servo.torqueEnable ? 1 : 0);
         }
     }
 
@@ -1095,7 +1119,7 @@ namespace ServoAX12
                     line += ",";
                 line += String(servo.config.positions[i]);
             }
-            line += "] initialized=" + String(servo.initialized) + " isMoving=" + String(servo.IsMoving);
+            line += "]";
             println(line);
         }
     }
