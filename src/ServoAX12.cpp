@@ -329,6 +329,12 @@ namespace ServoAX12
                     servo.load = map(load, 1024, 2047, 0, 100);
             }
 
+            // MOVING
+            int32_t moving = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::MOVING, servo.config.ax12Id);
+            IncrementFailureCount(servo);
+            if (dxl.getLastLibErrCode() == DXLLibErrorCode::DXL_LIB_OK)
+                servo.moving = (bool)moving;
+
             // ERROR
             int32_t error = dxl.readControlTableItem(ControlTableItem::ControlTableItemIndex::SHUTDOWN, servo.config.ax12Id);
             IncrementFailureCount(servo);                
@@ -416,7 +422,7 @@ namespace ServoAX12
         }
         
         // Gestion du timeout : log si timeout expiré pendant le mouvement
-        if(servo.IsMoving || servo.shouldMove)
+        if(servo.moving || servo.shouldMove)
         {
             if(servo.timeOut.IsTimeOut())
             {
@@ -478,7 +484,7 @@ namespace ServoAX12
         if (!ServoExists(logicalId))
             return false;
         auto &servo = Servos.at(logicalId);
-        if ((servo.IsMoving || servo.shouldMove) && !servo.timeOut.IsTimeOut())
+        if ((servo.moving || servo.shouldMove) && !servo.timeOut.IsTimeOut())
         {
             return true;
         }
@@ -950,8 +956,8 @@ namespace ServoAX12
             {
                 failureCountSum += servo.failureCount[i];
             }
-            println("ID %i, Name %s, Model Number %i, position %d, command position %d, speed %d, command speed %d, load %d, torque enable %d, error code 0x%02X, failure count sum %d, IsMoving %d, shouldMove %d", 
-                ax12Id, servo.name.c_str(), modelNumber, servo.position, servo.command_position, servo.speed, servo.command_speed, servo.load, servo.torqueEnable, servo.error.errorCode, failureCountSum, servo.IsMoving, servo.shouldMove);
+            println("ID %i, Name %s, Model Number %i, position %d, command position %d, speed %d, command speed %d, load %d, torque enable %d, error code 0x%02X, failure count sum %d, moving %d, shouldMove %d", 
+                ax12Id, servo.name.c_str(), modelNumber, servo.position, servo.command_position, servo.speed, servo.command_speed, servo.load, servo.torqueEnable, servo.error.errorCode, failureCountSum, servo.moving, servo.shouldMove);
         }
         else
         {

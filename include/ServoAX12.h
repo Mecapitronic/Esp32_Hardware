@@ -126,7 +126,7 @@ namespace ServoAX12
         int command_position = 0;
         int command_speed = 0;
         bool shouldMove = false;
-        bool IsMoving = false;
+        bool moving = false;
         bool ledState = false;
         Timeout timeOut;
         bool goalPositionAcked = true;
