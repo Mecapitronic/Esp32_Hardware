@@ -27,6 +27,7 @@ namespace Match
     extern State matchState;
 
     void Initialisation();
+    void RegisterCommands();
 
     void startMatchTimer();
     long getMatchTimeSec();
@@ -37,7 +38,5 @@ namespace Match
     void printMatch();
 
     void TaskUpdateMatch(void *pvParameters);
-    bool HandleCommand(Command cmd);
-    void PrintCommandHelp();
 } // namespace Match
 #endif

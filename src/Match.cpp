@@ -38,6 +38,13 @@ namespace Match
         SetNumPami(pami);
         // Start the match timer task
         taskUpdateMatch = TaskThread(TaskUpdateMatch, "TaskUpdateMatch", 10000, 15, 0);
+
+        RegisterCommands();
+    }
+
+    void RegisterCommands()
+    {
+        ESP32_Helper::RegisterCommand("MatchNumPami", "Set the PAMI number (1-99), MatchNumPami:2", FunctionCommand( if(cmd.hasData() && cmd.data[0] > 0 && cmd.data[0] < 100) SetNumPami(cmd.data[0]); ));
     }
 
     void startMatchTimer()
@@ -196,33 +203,4 @@ namespace Match
         println("Match Update Task STOPPED !");
     }
 
-    bool HandleCommand(Command cmd)
-    {
-        if(cmd.cmdEquals("MatchNumPami") && cmd.size == 1)
-        {
-            // MatchNumPami:2
-            int numPamiCmd = cmd.data[0];
-            if(numPamiCmd >= 0 && numPamiCmd <= 99)
-            {
-                SetNumPami(numPamiCmd);
-                return true;
-            }
-            else
-            {
-                printError("Invalid NumPami value: " + String(numPamiCmd));
-                return false;
-            }
-        }
-        else
-        {
-            printError("Unknown command: " + String(cmd.cmd));
-            return false;
-        }
-    }
-
-    void PrintCommandHelp()
-    {
-        println("Available Commands");
-        println("MatchNumPami:<value> - Set the PAMI number (1-99)");
-    }
 } // namespace Match

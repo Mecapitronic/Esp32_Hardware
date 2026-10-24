@@ -58,8 +58,6 @@ namespace Hardware
             TaskThread(TaskUpdateHardware, "TaskUpdateHardware", 20000, 15, 0);
 
         Match::Initialisation();
-        ESP32_Helper::RegisterCommandHandler("Match", Match::HandleCommand, Match::PrintCommandHelp);
-
         ServoAX12::Initialisation(SERIAL_SERVO, RX_SERVO, TX_SERVO, PIN_SERVO_DIR);
         ESP32_Helper::RegisterCommandHandler("AX12", ServoAX12::HandleCommand, ServoAX12::PrintCommandHelp);
 
