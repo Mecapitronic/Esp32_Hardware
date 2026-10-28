@@ -39,11 +39,21 @@ namespace Hardware
         println();
         println("-- Starting Hardware Initialisation --");
 
+        println("Starting I²C at 400 kHz");
         Wire.begin(SDA, SCL, 400000UL);
 
-        Power::Initialisation();
+        println("-- Starting Power Initialisation --");
+        Power::Initialisation();        
+        println("-- End of PowerInitialisation --");
+        
+        println("-- Starting Screen Initialisation --");
         Screen::Initialisation();
+        println("-- End of Screen Initialisation --");
+
+        println("-- Starting IHM Initialisation --");
         IHM::Initialisation();
+        println("-- End of IHM Initialisation --");
+
         if (useToF)
             TaskThread(ToF_VL53L8CX::TaskInit, "ToF_VL53L8CX TaskInit", 20000, 15, 0);
 
@@ -57,8 +67,13 @@ namespace Hardware
         taskUpdateHardware =
             TaskThread(TaskUpdateHardware, "TaskUpdateHardware", 20000, 15, 0);
 
+        println("-- Starting Match Initialisation --");
         Match::Initialisation();
+        println("-- End of Match Initialisation --");
+
+        println("-- Starting Servo AX12 Initialisation --");
         ServoAX12::Initialisation(SERIAL_SERVO, RX_SERVO, TX_SERVO, PIN_SERVO_DIR);
+        println("-- End of Servo AX12 Initialisation --");
 
         println("-- End of Hardware Initialisation --");
         println();
