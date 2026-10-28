@@ -59,7 +59,6 @@ namespace Hardware
 
         Match::Initialisation();
         ServoAX12::Initialisation(SERIAL_SERVO, RX_SERVO, TX_SERVO, PIN_SERVO_DIR);
-        ESP32_Helper::RegisterCommandHandler("AX12", ServoAX12::HandleCommand, ServoAX12::PrintCommandHelp);
 
         println("-- End of Hardware Initialisation --");
         println();

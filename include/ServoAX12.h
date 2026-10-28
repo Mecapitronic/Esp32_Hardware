@@ -171,6 +171,7 @@ namespace ServoAX12
     };
 
     void Initialisation(HardwareSerial &serial, int8_t rxPin, int8_t txPin, int8_t dirPin, BaudRate baudRate = BaudRate::BAUD_RATE_1000000, DxlProtocolVersion dxlProtocolVersion = DxlProtocolVersion::PROTOCOL_1);
+    void RegisterCommands();
 
     [[noreturn]] void TaskUpdateServo(void *pvParameters);
 
@@ -186,6 +187,8 @@ namespace ServoAX12
 
     void SetServoPosition(Hardware_Config::ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs = 10000);
     void SetServoPosition(Hardware_Config::ServoID logicalId, int position, int timeOutMs = 10000);
+    void SetServoSpeed(Hardware_Config::ServoID logicalId, int speed);
+    void SetTorqueLimit(Hardware_Config::ServoID logicalId, int torque);
 
     int GetServoPosition(Hardware_Config::ServoID logicalId);
 
@@ -197,9 +200,6 @@ namespace ServoAX12
                               int32_t &value,
                               ServoMotion *servo,
                               uint32_t timeout = 10);
-
-    bool HandleCommand(Command cmd);
-    void PrintCommandHelp();
 
     int16_t Scan();
     int16_t Scan(DxlProtocolVersion _protocol, BaudRate _dxlBaud);
@@ -220,7 +220,8 @@ namespace ServoAX12
     void PrintPosition(Hardware_Config::ServoID logicalId);
     void PrintAllSpeed();
     void PrintSpeed(Hardware_Config::ServoID logicalId);
-    void PrintAllTorqueLimit();    
+    void PrintAllTorqueLimit();   
+    void PrintTorqueLimit(Hardware_Config::ServoID logicalId);
     void PrintServoConfigs();
 } // namespace ServoAX12
 
