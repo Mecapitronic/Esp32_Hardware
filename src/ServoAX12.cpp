@@ -109,24 +109,26 @@ namespace ServoAX12
         // PrintTeleplot:1;AX12Torque:1:30;AX12Torque:2:30;AX12Speed:1:30;AX12Speed:2:30;AX12Pos:1:150;AX12Pos:2:160;AX12Wait;Delay:2000;AX12Pos:1:280;AX12Pos:2:210;AX12Wait;
         // PrintTeleplot:0;AX12Torque:1:100;AX12Torque:2:100;AX12Speed:1:10;AX12Speed:2:10;AX12Pos:1:150;AX12Pos:2:160;Delay:2000;AX12Pos:1:280;AX12Pos:2:210
 
-        ESP32_Helper::RegisterCommand("AX12Scan", "Scan all Dynamixel on all protocols and baudrates",
+        ESP32_Helper::RegisterCommand("AX12Scan",
+            "AX12Scan - Scan Dynamixel devices on all supported protocols and baud rates."
+            "\n     AX12Scan:<protocol:int>:<baudRate:int@bit/s> - Scan one protocol and baud rate; protocol: 1 or 2.",
             FunctionCommand( if (cmd.hasData(2)) Scan((DxlProtocolVersion)cmd.data[0], (BaudRate)cmd.data[1]); else Scan(); ));
-        ESP32_Helper::RegisterCommand("AX12PrintInfo", "Print info for all servos or for the given id, AX12PrintInfo<id>",
+        ESP32_Helper::RegisterCommand("AX12PrintInfo", "AX12PrintInfo(:id:int) - Show servo information; omit logical id for all registered servos.",
             FunctionCommand( if (cmd.hasData()) { PrintDxlInfo(static_cast<ServoID>(cmd.data[0])); } else { for (const auto &[_id, servo] : Servos) { PrintDxlInfo(_id); } } ));
-        ESP32_Helper::RegisterCommand("AX12ConfigPrint", "Print current config of all registered servos",
+        ESP32_Helper::RegisterCommand("AX12ConfigPrint", "AX12ConfigPrint - Show the configuration of all registered servos.",
             FunctionCommand( PrintServoConfigs(); ));
             
-        ESP32_Helper::RegisterCommand("AX12Start", "Start all servos (torique on)",
+        ESP32_Helper::RegisterCommand("AX12Start", "AX12Start - Enable torque on all registered servos.",
             FunctionCommand( for (auto &[servoKey, servo] : Servos) {
                 dxl.torqueOn(servo.config.ax12Id);
                 IncrementFailureCount(servo); } ));
             
-        ESP32_Helper::RegisterCommand("AX12Stop", "Stop all servos (torque off)",
+        ESP32_Helper::RegisterCommand("AX12Stop", "AX12Stop - Disable torque on all registered servos.",
             FunctionCommand( for (auto &[servoKey, servo] : Servos) {
                 dxl.torqueOff(servo.config.ax12Id);
                 IncrementFailureCount(servo); } ));
             
-        ESP32_Helper::RegisterCommand("AX12Wait", "Wait for id/all servos to finish moving, AX12Wait:<id>",
+        ESP32_Helper::RegisterCommand("AX12Wait", "AX12Wait(:id:int) - Wait for motion to finish; omit logical id to wait for all servos.",
             FunctionCommand( 
                 if (cmd.hasData()) {
                     ServoID logicalId = static_cast<ServoID>(cmd.data[0]);
@@ -144,7 +146,10 @@ namespace ServoAX12
             // TORQUE_LIMIT AX12Table:70
             // MOVING_SPEED AX12Table:61
             // PRESENT_POSITION AX12Table:66
-        ESP32_Helper::RegisterCommand("AX12Table", "Read/Write Dynamixel control table item for id/all servos, AX12TableWrite:[item](:[value])(:[logical id])",
+        ESP32_Helper::RegisterCommand("AX12Table",
+            "AX12Table:<item:int> - Read a control-table item for all registered servos."
+            "\n     AX12Table:<item:int>:<value:int>(:id:int) - Read all, then write to one logical id or all if omitted."
+            "\n     item: Dynamixel2Arduino control-table item index, not a register address; value: raw register units.",
             FunctionCommand(
                 if (cmd.hasData()) {
                     for (auto &[servoKey, servo] : Servos) {
@@ -173,7 +178,11 @@ namespace ServoAX12
                 // AX12Pos:2:160
                 // AX12Pos:1:180;AX12Pos:2:160
                 // AX12Pos:1:180;AX12Pos:2:160
-        ESP32_Helper::RegisterCommand("AX12Pos", "Print position of id/all servo, Set servo [id] to [position] (in degrees) with [timeout]>0 in ms, AX12Pos():[id])(:[position])(:[timeout])",
+        ESP32_Helper::RegisterCommand("AX12Pos",
+            "AX12Pos - Show positions of all servos in degrees."
+            "\n     AX12Pos:<id:int> - Show position of one logical servo id in degrees."
+            "\n     AX12Pos:<id:int>:<position:int@deg>(:timeout:int@ms=10000) - Show position, then set the target."
+            "\n     position: within the configured servo limits; timeout > 0.",
             FunctionCommand(
                 if (!cmd.hasData()) {
                     PrintAllPosition();
@@ -190,7 +199,10 @@ namespace ServoAX12
                         println("Set Servo %d Position %d", logicalId, position);
                         SetServoPosition(logicalId, position); }}
                 } ));
-        ESP32_Helper::RegisterCommand("AX12Speed", "Print speed of id/all servo, Set servo [id] [speed] (in %), AX12Speed():[id])(:[speed])",
+        ESP32_Helper::RegisterCommand("AX12Speed",
+            "AX12Speed - Show speeds of all servos in percent."
+            "\n     AX12Speed:<id:int> - Show speed of one logical servo id in percent."
+            "\n     AX12Speed:<id:int>:<speed:int@%> - Show speed, then set it; speed: 0..100.",
             FunctionCommand(
                 if (!cmd.hasData()) {
                     PrintAllSpeed();
@@ -202,7 +214,10 @@ namespace ServoAX12
                         println("Set Servo %d Speed %d", logicalId, speed);
                         SetServoSpeed(logicalId, speed); }
                 } ));
-        ESP32_Helper::RegisterCommand("AX12Torque", "Print torque limit of id/all servo, Set servo [id] torque limit (in %), AX12Torque():[id])(:[torque])",
+        ESP32_Helper::RegisterCommand("AX12Torque",
+            "AX12Torque - Show raw torque limits of all servos (0..1023)."
+            "\n     AX12Torque:<id:int> - Show raw torque limit of one logical servo id (0..1023)."
+            "\n     AX12Torque:<id:int>:<torque:int@%> - Show raw torque limit, then set it in percent; torque: 0..100.",
             FunctionCommand(
                 if (!cmd.hasData()) {
                     PrintAllTorqueLimit();

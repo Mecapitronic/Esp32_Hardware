@@ -44,7 +44,7 @@ namespace Match
 
     void RegisterCommands()
     {
-        ESP32_Helper::RegisterCommand("MatchNumPami", "Set the PAMI number (1-99), MatchNumPami:2", FunctionCommand( if(cmd.hasData() && cmd.data[0] > 0 && cmd.data[0] < 100) SetNumPami(cmd.data[0]); ));
+        ESP32_Helper::RegisterCommand("MatchNumPami", "MatchNumPami:<number:int> - Set the PAMI number. Example: MatchNumPami:1", FunctionCommand( if(cmd.hasData() && cmd.data[0] > 0 && cmd.data[0] < 100) SetNumPami(cmd.data[0]); ));
     }
 
     void startMatchTimer()
