@@ -50,14 +50,14 @@ namespace IHM
             println("Tirette Absente au démarrage");
         }
 
-        builtInLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_RGB_LED, RGB>(&builtin_led, 1);
+        builtInLEDController = &FastLED.addLeds<WS2812, Hardware_Config::PIN_LED_RGB, RGB>(&builtin_led, 1);
         builtin_led = CRGB::Purple;
         if (builtInLEDController)
         {
             builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
         }
 
-        stripLEDController = &FastLED.addLeds<NEOPIXEL, Hardware_Config::PIN_WS2812_LED>(strip_led, stripLEDCount);
+        stripLEDController = &FastLED.addLeds<NEOPIXEL, Hardware_Config::PIN_LED_WS2812>(strip_led, stripLEDCount);
         fill_solid(strip_led, stripLEDCount, CRGB::Purple);
         if (stripLEDController)
         {
