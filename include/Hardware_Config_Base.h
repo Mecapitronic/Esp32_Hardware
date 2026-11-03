@@ -43,8 +43,8 @@ namespace Hardware_Config
     constexpr size_t PIN_START = 16;
 
     //******************** Pins LED - RGB
-    constexpr size_t PIN_RGB_LED = 38;
-    constexpr size_t PIN_WS2812_LED = 12;
+    constexpr size_t PIN_LED_RGB = 38;
+    constexpr size_t PIN_LED_WS2812 = 12;
 
     //******************** Pins Enable Power
     constexpr size_t PIN_EN_MCU = 3;
