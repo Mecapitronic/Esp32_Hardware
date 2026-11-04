@@ -670,6 +670,10 @@ namespace ServoAX12
     {
         if (!ServoExists(logicalId))
             return;
+
+        if (!IHM::bauReady)
+            return;
+
         ServoMotion &servo = Servos.at(logicalId);
 
         int minPos = 0;
@@ -684,9 +688,16 @@ namespace ServoAX12
             return;
         }
         
-        if(servo.command_position == position)
+        if (servo.command_position == position)
         {
-            // same command, do nothing
+            // Same target; keep the existing timeout and acknowledgement state.
+            return;
+        }
+
+        if (position >= servo.position - 1 && position <= servo.position + 1 &&
+            !servo.moving && !servo.shouldMove)
+        {
+            // Ignore a new target within one degree when the servo is idle.
             return;
         }
 
@@ -702,6 +713,10 @@ namespace ServoAX12
     {
         if (!ServoExists(logicalId))
             return;
+
+        if (!IHM::bauReady)
+            return;
+
         ServoMotion &servo = Servos.at(logicalId);
 
         if(speed < 0 || speed > 100)
