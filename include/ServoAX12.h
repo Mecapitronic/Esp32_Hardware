@@ -184,6 +184,9 @@ namespace ServoAX12
 
     bool AreAllServoMoving();
     bool IsServoMoving(Hardware_Config::ServoID logicalId);
+    
+    void WaitAllServo();
+    void WaitServo(Hardware_Config::ServoID logicalId);
 
     void SetServoPosition(Hardware_Config::ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs = 10000);
     void SetServoPosition(Hardware_Config::ServoID logicalId, int position, int timeOutMs = 10000);

@@ -649,6 +649,22 @@ namespace ServoAX12
         return false;
     }
 
+    void WaitAllServo()
+    {
+        while (AreAllServoMoving())
+        {
+            vTaskDelay(1);
+        }
+    }
+
+    void WaitServo(Hardware_Config::ServoID logicalId)
+    {
+        while (IsServoMoving(logicalId))
+        {
+            vTaskDelay(1);
+        }
+    }
+
     void SetServoPosition(ServoID logicalId, Hardware_Config::ServoPosition servoPosition, int timeOutMs)
     {
         if (!ServoExists(logicalId))
