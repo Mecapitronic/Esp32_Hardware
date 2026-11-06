@@ -32,27 +32,29 @@
   ],
   "dependencies": [
     {
-      "name": "robotis-git/Dynamixel2Arduino",
-      "version": "^0.8.0"
+      "owner": "greiman",
+      "name": "SSD1306Ascii",
+      "version": "^1.3.5"
     },
     {
-      "name": "adafruit/Adafruit SSD1306",
-      "version": "^2.5.16"
-    },
-    {
-      "name": "adafruit/Adafruit INA219",
+      "owner": "adafruit",
+      "name": "Adafruit INA219",
       "version": "^1.2.3"
     },
     {
-      "name": "fastled/FastLED",
+      "owner": "fastled",
+      "name": "FastLED",
       "version": "3.9.16"
+    },
+    {
+      "owner": "stm32duino",
+      "name": "STM32duino VL53L8CX",
+      "version": "^2.0.3"
     }
   ],
   "build": {
     "includeDir": "include",
-    "srcDir": "src"
-  },
-  "examples": [
-    "examples/*/*.cpp"
-  ]
+    "srcDir": "src",
+    "flags": ["-I config"]
+  }
 }

@@ -6,6 +6,7 @@ using namespace ServoAX12;
 void setup(void)
 {
     ESP32_Helper::Initialisation();
+    println("Esp32_Hardware Lib Main");
     Hardware::Initialisation(false);
     Power::EnablePower();
 

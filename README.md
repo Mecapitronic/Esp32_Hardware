@@ -1,6 +1,27 @@
 # Esp32_Hardware
 Lib for common hardware mounted on PAMI and main robot
 
+## Configuration
+
+Le dossier `config` contient :
+
+- `Hardware_Config_Base.h` : configuration matérielle par défaut, utilisée si
+  aucun fichier `Hardware_Config.h` personnalisé n'est trouvé. Pour adapter les
+  broches et les identifiants au projet parent, copier ce fichier dans son
+  dossier `config` et le renommer `Hardware_Config.h`.
+- `vl53l8cx_platform_config_custom.h` : configuration des données produites par
+  le capteur VL53L8CX, s'il n'existe pas, le fichier `vl53l8cx_platform_config_default.h` sera utilisé.
+
+Pour compiler ce projet autonome, son `platformio.ini` ajoute `-I config` aux
+`build_flags`. Un projet parent comme PAMI peut placer ses propres fichiers
+`Hardware_Config.h` et `vl53l8cx_platform_config_custom.h` dans son dossier
+`config`, puis ajouter ce dossier globalement aux `build_flags` :
+
+```ini
+build_flags =
+  -I config
+```
+
 ## Commandes console
 
 Envoyer `Help` pour voir les commandes des modules initialisés et la légende.
