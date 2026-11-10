@@ -599,7 +599,7 @@ namespace ServoAX12
         }
 
         // On considère que le servo est en mouvement si la position n'est pas atteinte ±5° ET timeout actif
-        servo.shouldMove = (servo.position >= servo.command_position + 5 || servo.position <= servo.command_position - 5) && !servo.timeOut.IsTimeOut();
+        servo.shouldMove = abs(servo.position - servo.command_position) >= 5 && servo.timeOut.IsRunning();
 
         if (servo.shouldMove)
         {
@@ -642,7 +642,7 @@ namespace ServoAX12
         if (!ServoExists(logicalId))
             return false;
         auto &servo = Servos.at(logicalId);
-        if ((servo.moving || servo.shouldMove) && !servo.timeOut.IsTimeOut())
+        if ((servo.moving || servo.shouldMove) && servo.timeOut.IsRunning())
         {
             return true;
         }
@@ -710,7 +710,8 @@ namespace ServoAX12
             return;
         }
 
-        if (position >= servo.position - 1 && position <= servo.position + 1 &&
+        constexpr int positionTolerance = 1;
+        if (abs(position - servo.position) <= positionTolerance &&
             !servo.moving && !servo.shouldMove)
         {
             // Ignore a new target within one degree when the servo is idle.
@@ -722,6 +723,7 @@ namespace ServoAX12
         servo.command_position = position;
         servo.goalPositionAcked = false;
         servo.timeOut.Start(timeOutMs);
+        servo.shouldMove = true;
         // We set the command into the task, if power is not too low
     }
 

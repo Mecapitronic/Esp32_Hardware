@@ -43,11 +43,11 @@ namespace Screen
 
         Element elementPosY{4, 0, "Y  456", ""};
         Element elementPosTargetY{4, 6, "Y  123", ""};
-        Element elementServo1{4, 13, "Srv1:111", ""};
+        Element elementServo1{4, 13, "Sv1:111 ", ""};
 
         Element elementPosA{5, 0, "A  789", ""};
         Element elementPosTargetA{5, 6, "A  123", ""};
-        Element elementServo2{5, 13, "Srv2:222", ""};
+        Element elementServo2{5, 13, "Sv2:222 ", ""};
 
         Element elementBlankLine6{6, 0, "                     ", ""};
 
@@ -254,11 +254,12 @@ namespace Screen
             ServoAX12::ServoMotion servo = ServoAX12::GetServoByNumber(servoNum);
             if (servo.config.ax12Id != (uint8_t)Hardware_Config::ServoID::BroadCast)
             {
+                String servoName = servo.name.substring(0, 3);
                 if(!servo.initialized)
                 {
-                    return String(servo.name) + ": ?";
+                    return servoName + ": ?";
                 }
-                return String(servo.name) + ":" + String(servo.position);
+                return servoName + ":" + String(servo.position) + (servo.moving ? "M" : (servo.shouldMove ? "m" : (servo.timeOut.HasTimedOut() ? "T" : " ")));
             }
             else
             {
