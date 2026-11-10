@@ -120,7 +120,9 @@ namespace Match
             chrono.Start();
             try
             {
-                // Etat au boot du robot, en attente de l'insertion de la tirette
+                CheckEndOfMatch();
+
+                // État au boot du robot, en attente de l'insertion de la tirette
                 if (Match::matchState == State::MATCH_BOOT)
                 {
                     if (IHM::ledTimeOut.GetTimeout() != 1000)
@@ -153,42 +155,12 @@ namespace Match
                     Power::EnablePower();
                     if (IHM::ledTimeOut.GetTimeout() != 200)
                         IHM::ledTimeOut.Start(200);
-
-                    Power::EnablePower();
-                    //println("Start of Match !");
-                    /*
-                    int lastMatchTime = 0;
-                    while(Match::getMatchTimeMs() < Match::time_start_match &&
-                    IHM::switchMode == 1)
-                    {
-                      // Countdown to start
-                      if (lastMatchTime != (int)(Match::getMatchTimeSec()))
-                      {
-                          println("Match Time %i", (int)(Match::getMatchTimeSec()));
-                          lastMatchTime = (int)(Match::getMatchTimeSec());
-                      }
-                      vTaskDelay(1);
-                    }*/
-/*
-                    if (IHM::switchMode == 1)
-                    {
-                        println("Mode Match !");
-                    }
-                    else
-                    {
-                        println("Mode Test !");
-                    }*/
-
-                    CheckEndOfMatch();
-                    // Fin des actions
-                    //Match::matchState = State::MATCH_STOP;
                 }
 
                 // Arrêt des actions, en attente de la fin du timer pour terminer le match
                 if (Match::matchState == State::MATCH_STOP)
                 {
-                    CheckEndOfMatch();
-                    //Match::matchState = State::MATCH_END;
+
                 }
 
                 // Fin du match
