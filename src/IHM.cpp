@@ -9,11 +9,14 @@ namespace IHM
     int tirettePresent = -1;
     int switchMode = -1;
     int bauReady = -1;
+    Timeout ledTimeOut;
 
     namespace
     {
         int ledState = LOW;
-        Timeout ledTimeOut;
+        CRGB teamColor = CRGB::Black;
+        CRGB teamInverseColor = CRGB::Black;
+        CRGB modeColor = CRGB::Black;
 
         CLEDController *builtInLEDController = nullptr;
         CRGB builtin_led;
@@ -108,17 +111,13 @@ namespace IHM
     }
 
     void ShowLed()
-    {
-        CRGB teamColor = CRGB::Black;
-        if (team == Team::Jaune)
-        {
-            teamColor = CRGB::Gold;
-        }
-        if (team == Team::Bleu)
-        {
-            teamColor = CRGB::Blue;
-        }
+    {        
+        teamColor = (IHM::team == IHM::Team::Jaune) ? CRGB::Gold : ((IHM::team == IHM::Team::Bleu) ? CRGB::DodgerBlue : CRGB::White);
+        teamInverseColor = (IHM::team == IHM::Team::Jaune) ? CRGB::DodgerBlue : ((IHM::team == IHM::Team::Bleu) ? CRGB::Gold : CRGB::White);
+        modeColor = (IHM::switchMode == 1) ? CRGB::Green : ((IHM::switchMode == 0) ? CRGB::Red: CRGB::White);
 
+        if (ledTimeOut.IsTimeOut())
+            ledState = !ledState;
         if (!bauReady)
         {
             builtin_led = CRGB::Red;
@@ -126,23 +125,10 @@ namespace IHM
         }
         else
         {
-            builtin_led = teamColor;
+            builtin_led = ledState ? teamColor : modeColor;
             fill_solid(strip_led, stripLEDCount, CRGB::Black);
             renderStatusIndicators();
-        }
-
-        if (ledTimeOut.IsTimeOut())
-        {
-            ledState = !ledState;
-        }
-        if (ledState)
-        {
-            builtin_led = teamColor;
-        }
-        else
-        {
-            builtin_led = bauReady ? CRGB::Black : CRGB::Red;
-        }
+        }        
     
         if (builtInLEDController != nullptr)
             builtInLEDController->showLeds(BUILTIN_BRIGHTNESS);
@@ -152,10 +138,6 @@ namespace IHM
 
     void renderStatusIndicators()
     {
-        const CRGB teamColor = (IHM::team == IHM::Team::Jaune) ? CRGB::Gold : ((IHM::team == IHM::Team::Bleu) ? CRGB::DodgerBlue : CRGB::White);
-        const CRGB teamInverseColor = (IHM::team == IHM::Team::Jaune) ? CRGB::DodgerBlue : ((IHM::team == IHM::Team::Bleu) ? CRGB::Gold : CRGB::White);
-        const CRGB modeColor = (IHM::switchMode == 1) ? CRGB::Green : ((IHM::switchMode == 0) ? CRGB::Red: CRGB::White);
-
         if (Match::matchState == Match::State::MATCH_BOOT || Match::matchState == Match::State::MATCH_WAIT)
         {
             int numPami = Match::GetNumPami();

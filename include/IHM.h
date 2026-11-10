@@ -30,6 +30,9 @@ namespace IHM
     //  Retiré (OK) = 1, Enclenché (NOK) = 0, None = -1
     extern int bauReady;
 
+    // Timeout for team/BAU led
+    extern Timeout ledTimeOut;
+
     void Initialisation();
     void Update();
 

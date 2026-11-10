@@ -123,6 +123,8 @@ namespace Match
                 // Etat au boot du robot, en attente de l'insertion de la tirette
                 if (Match::matchState == State::MATCH_BOOT)
                 {
+                    if (IHM::ledTimeOut.GetTimeout() != 1000)
+                        IHM::ledTimeOut.Start(1000);
                     if (IHM::tirettePresent == 1)
                     {
                         Match::matchState = State::MATCH_WAIT;
@@ -134,6 +136,8 @@ namespace Match
                 if (Match::matchState == State::MATCH_WAIT)
                 {
                     Power::EnablePower();
+                    if (IHM::ledTimeOut.GetTimeout() != 500)
+                        IHM::ledTimeOut.Start(500);
 
                     if (IHM::tirettePresent == 0)
                     {
@@ -146,6 +150,10 @@ namespace Match
                 // Match en cours
                 if (Match::matchState == State::MATCH_RUN)
                 {
+                    Power::EnablePower();
+                    if (IHM::ledTimeOut.GetTimeout() != 200)
+                        IHM::ledTimeOut.Start(200);
+
                     Power::EnablePower();
                     //println("Start of Match !");
                     /*
