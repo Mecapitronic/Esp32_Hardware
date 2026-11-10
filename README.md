@@ -1,6 +1,22 @@
 # Esp32_Hardware
 Lib for common hardware mounted on PAMI and main robot
 
+## Compilation
+
+La compilation PlatformIO du projet Esp32_Hardware nécessite également les dépôts `Esp32_Helper` et
+`Dynamixel2Arduino`, clonés au même niveau que `ESP32_Hardware` :
+
+```text
+Repositories/
+├── ESP32_Hardware/
+├── Esp32_Helper/
+└── Dynamixel2Arduino/
+```
+
+Le dossier `main/` de ce projet sert uniquement à compiler et tester la
+bibliothèque de façon autonome. Lorsqu'elle est intégrée dans un projet parent,
+c'est le `main` du projet parent qui est utilisé.
+
 ## Configuration
 
 Le dossier `config` contient :
