@@ -361,7 +361,8 @@ namespace Screen
 
     void Logo(void)
     {
-        int numPami = Match::GetNumPami();
+        // The Match is not init at this point, so we need to read the number of Pami from the preferences
+        int numPami = Preferences_Helper::LoadFromPreference("NumPami", 0);
         String logoTexte = "";
         if(numPami == 10 )
             logoTexte = "    ROBOT - START   ";
