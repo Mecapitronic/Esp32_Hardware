@@ -174,9 +174,12 @@ namespace Screen
             String result = "Obs ";
             for (size_t i = 0; i < maxObstacles; i++)
             {
-                if (obstacles[i] != 0)
+                if (obstacles[i] > 0)
                 {
-                    result += String(obstacles[i]);
+                    if(obstacles[i] < 10)
+                        result += String(obstacles[i]);
+                    else
+                        result += "X";
                 }
                 else
                 {
