@@ -90,6 +90,7 @@ namespace Match
             if (elapsedTime >= time_end_match)
             {
                 matchState = State::MATCH_END;
+                printMatch();
             }
         }
 
@@ -97,10 +98,12 @@ namespace Match
         if(matchState == State::MATCH_STOP && IHM::switchMode == 0 && IHM::tirettePresent == 1)
         {
             matchState = State::MATCH_END;
+            printMatch();
         }
         if (matchState == State::MATCH_END && IHM::switchMode == 0 && IHM::tirettePresent == 0)
         {
             Match::matchState = Match::State::MATCH_BOOT;
+            printMatch();
         }
     }
 
@@ -140,9 +143,8 @@ namespace Match
                         Match::printMatch();
                     }
                 }
-
                 // Tirette présente, en attente de retrait de la tirette pour démarrer le match
-                if (Match::matchState == State::MATCH_WAIT)
+                else if (Match::matchState == State::MATCH_WAIT)
                 {
                     if (IHM::ledTimeOut.GetTimeout() != 500)
                         IHM::ledTimeOut.Start(500);
@@ -154,22 +156,20 @@ namespace Match
                         Match::printMatch();
                     }
                 }
-
                 // Match en cours
-                if (Match::matchState == State::MATCH_RUN)
+                else if (Match::matchState == State::MATCH_RUN)
                 {
                     if (IHM::ledTimeOut.GetTimeout() != 200)
                         IHM::ledTimeOut.Start(200);
                 }
-
                 // Arrêt des actions, en attente de la fin du timer pour terminer le match
-                if (Match::matchState == State::MATCH_STOP)
+                else if (Match::matchState == State::MATCH_STOP)
                 {
-
+                    if (IHM::ledTimeOut.GetTimeout() != 2000)
+                        IHM::ledTimeOut.Start(2000);
                 }
-
                 // Fin du match
-                if (Match::matchState == State::MATCH_END)
+                else if (Match::matchState == State::MATCH_END)
                 {
                     // Disable Motor & Servo Power
                     Power::SetPower(false);
