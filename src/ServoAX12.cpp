@@ -285,7 +285,7 @@ namespace ServoAX12
         {
             servo.position = servo.command_position = servo.config.positions[0];
             servo.speed = 0;
-            servo.command_speed = 50;
+            servo.command_speed = 85;
             servo.initialized = true;
             servo.torqueEnable = true;
             println("Servo %s %d position %d [SIM]",

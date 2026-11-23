@@ -39,7 +39,14 @@ namespace IHM
         pinMode(Hardware_Config::PIN_SWITCH, INPUT_PULLUP);
 
         // Boutton Arret d'Urgence
-        pinMode(Hardware_Config::PIN_BAU, INPUT);
+        if(simulation)
+        {
+            pinMode(Hardware_Config::PIN_BAU, INPUT_PULLUP);
+        }
+        else
+        {
+            pinMode(Hardware_Config::PIN_BAU, INPUT);
+        }
 
         ledTimeOut.Start(1000);
 
