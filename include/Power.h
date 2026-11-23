@@ -13,8 +13,7 @@ namespace Power
     void Initialisation(void);
     void Update();
 
-    void DisablePower();
-    void EnablePower();
+    void SetPower(bool set);
     void UpdatePower();
     bool isPowerON();
 

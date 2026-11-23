@@ -144,7 +144,6 @@ namespace Match
                 // Tirette présente, en attente de retrait de la tirette pour démarrer le match
                 if (Match::matchState == State::MATCH_WAIT)
                 {
-                    //Power::SetPower(true);
                     if (IHM::ledTimeOut.GetTimeout() != 500)
                         IHM::ledTimeOut.Start(500);
 
@@ -159,7 +158,6 @@ namespace Match
                 // Match en cours
                 if (Match::matchState == State::MATCH_RUN)
                 {
-                    //Power::SetPower(true);
                     if (IHM::ledTimeOut.GetTimeout() != 200)
                         IHM::ledTimeOut.Start(200);
                 }
@@ -174,7 +172,7 @@ namespace Match
                 if (Match::matchState == State::MATCH_END)
                 {
                     // Disable Motor & Servo Power
-                    //Power::SetPower(false);
+                    Power::SetPower(false);
                 }
             }
             catch (std::exception const &e)

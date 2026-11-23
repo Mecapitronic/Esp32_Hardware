@@ -85,15 +85,9 @@ namespace Power
         }
     }
 
-    void DisablePower()
+    void SetPower(bool set)
     { 
-        powerEnable = false;
-        UpdatePower();
-    }
-
-    void EnablePower()
-    {
-        powerEnable = true;
+        powerEnable = set;
         UpdatePower();
     }
 

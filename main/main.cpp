@@ -8,7 +8,7 @@ void setup(void)
     ESP32_Helper::Initialisation();
     println("Esp32_Hardware Lib Main");
     Hardware::Initialisation(false);
-    Power::EnablePower();
+    Power::SetPower(true);
 
     //ServoConfig testConfig = ServoConfig((uint8_t)ServoID::Test,
     //    std::array<int32_t, MAX_SERVO_POSITIONS>{0, 145, 290}, 3);
