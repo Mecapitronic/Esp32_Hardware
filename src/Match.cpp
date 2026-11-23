@@ -82,7 +82,8 @@ namespace Match
 
     void CheckEndOfMatch()
     {
-        if ((matchState == State::MATCH_RUN) || (matchState == State::MATCH_STOP) && IHM::switchMode == 1)
+        // En mode Match : La fin du match est en fonction du timer de match
+        if ((matchState == State::MATCH_RUN || matchState == State::MATCH_STOP) && IHM::switchMode == 1)
         {
             // robot still running or waiting for end of match
             elapsedTime = millis() - startTime;
@@ -91,9 +92,15 @@ namespace Match
                 matchState = State::MATCH_END;
             }
         }
+
+        // En mode Test : La fin du match est fait avec la tirette
         if(matchState == State::MATCH_STOP && IHM::switchMode == 0 && IHM::tirettePresent == 1)
         {
             matchState = State::MATCH_END;
+        }
+        if (matchState == State::MATCH_END && IHM::switchMode == 0 && IHM::tirettePresent == 0)
+        {
+            Match::matchState = Match::State::MATCH_BOOT;
         }
     }
 
@@ -137,7 +144,7 @@ namespace Match
                 // Tirette présente, en attente de retrait de la tirette pour démarrer le match
                 if (Match::matchState == State::MATCH_WAIT)
                 {
-                    Power::EnablePower();
+                    //Power::SetPower(true);
                     if (IHM::ledTimeOut.GetTimeout() != 500)
                         IHM::ledTimeOut.Start(500);
 
@@ -152,7 +159,7 @@ namespace Match
                 // Match en cours
                 if (Match::matchState == State::MATCH_RUN)
                 {
-                    Power::EnablePower();
+                    //Power::SetPower(true);
                     if (IHM::ledTimeOut.GetTimeout() != 200)
                         IHM::ledTimeOut.Start(200);
                 }
@@ -167,7 +174,7 @@ namespace Match
                 if (Match::matchState == State::MATCH_END)
                 {
                     // Disable Motor & Servo Power
-                    Power::DisablePower();
+                    //Power::SetPower(false);
                 }
             }
             catch (std::exception const &e)
