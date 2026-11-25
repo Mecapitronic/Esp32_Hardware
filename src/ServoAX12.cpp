@@ -16,7 +16,7 @@ namespace ServoAX12
         bool scanning = false;
 
         TaskThread taskUpdateServo;
-        std::unordered_map<Hardware_Config::ServoID, ServoMotion, std::hash<Hardware_Config::ServoID>> Servos;
+        std::unordered_map<Hardware_Config::ServoID, ServoMotion, ESP32_Helper::EnumTypeHash<Hardware_Config::ServoID>> Servos;
 
         struct ServoInitStep
         {

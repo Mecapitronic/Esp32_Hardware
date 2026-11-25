@@ -227,16 +227,4 @@ namespace ServoAX12
     void PrintTorqueLimit(Hardware_Config::ServoID logicalId);
     void PrintServoConfigs();
 } // namespace ServoAX12
-
-namespace std
-{
-    template <> struct hash<ServoAX12::ServoMotion>
-    {
-        std::size_t operator()(const ServoAX12::ServoMotion &k) const
-        {
-            // Hash on physical AX12 ID, same key as operator==
-            return std::hash<uint8_t>()(k.config.ax12Id);
-        }
-    };
-} // namespace std
 #endif
